@@ -16,6 +16,7 @@
 typedef std::string String;
 typedef intra::ImportData<String> ImportDataType;
 typedef intrasqlite::StatDataManager StatDataManager;
+typedef intra::Dataset Dataset;
 /////////////////////////////////
 class IntraTestEnv: public ::testing::Environment {
 public:
@@ -40,6 +41,7 @@ private:
 private:
 	static const char *TEST_FILENAME;
 	static const char *DATABASE_FILENAME;
+	static const char *TEST_DATASET_SIGLE;
 };
 // class IntraTestEnv
 /////////////////////////////////////////
