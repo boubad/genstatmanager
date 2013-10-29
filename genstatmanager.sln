@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "statdata", "statdata\statda
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dbsqlite", "dbsqlite\dbsqlite.vcxproj", "{7F4088A2-2818-43DE-9079-353BE99A3D27}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "intrasqlite", "intrasqlite\intrasqlite.vcxproj", "{86E8EFCE-E927-4834-8878-42FA5E99AEEB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -25,6 +27,10 @@ Global
 		{7F4088A2-2818-43DE-9079-353BE99A3D27}.Debug|Win32.Build.0 = Debug|Win32
 		{7F4088A2-2818-43DE-9079-353BE99A3D27}.Release|Win32.ActiveCfg = Release|Win32
 		{7F4088A2-2818-43DE-9079-353BE99A3D27}.Release|Win32.Build.0 = Release|Win32
+		{86E8EFCE-E927-4834-8878-42FA5E99AEEB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{86E8EFCE-E927-4834-8878-42FA5E99AEEB}.Debug|Win32.Build.0 = Debug|Win32
+		{86E8EFCE-E927-4834-8878-42FA5E99AEEB}.Release|Win32.ActiveCfg = Release|Win32
+		{86E8EFCE-E927-4834-8878-42FA5E99AEEB}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
