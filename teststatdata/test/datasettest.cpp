@@ -17,18 +17,18 @@ using namespace intra;
 ////////////////////////////////////////////
 class DatasetTest: public ::testing::Test {
 protected:
-	static std::unique_ptr<Dataset> m_globalset;
-	std::unique_ptr<Dataset> m_set;
-	typedef Dataset::VariableMap VariableMap;
-	typedef Dataset::IndivMap IndivMap;
-	typedef Dataset::ValueVector ValueVector;
+	static std::unique_ptr<intra::Dataset> m_globalset;
+	std::unique_ptr<intra::Dataset> m_set;
+	typedef intra::Dataset::VariableMap VariableMap;
+	typedef intra::Dataset::IndivMap IndivMap;
+	typedef intra::Dataset::ValueVector ValueVector;
 protected:
 	static void SetUpTestCase() {
-		m_globalset.reset(new Dataset());
-		Dataset *pSet = m_globalset.get();
+		m_globalset.reset(new intra::Dataset());
+		intra::Dataset *pSet = m_globalset.get();
 		ASSERT_TRUE(pSet != nullptr);
-		String databasename;
-		String datasetSigle;
+		intra::String databasename;
+		intra::String datasetSigle;
 		global_intraenv->get_database_name(databasename);
 		global_intraenv->get_dataset_sigle(datasetSigle);
 		pSet->sigle(datasetSigle);
@@ -45,8 +45,8 @@ protected:
 	virtual ~DatasetTest() {
 	}
 	virtual void SetUp() {
-		m_set.reset(new Dataset());
-		Dataset *pSet = m_set.get();
+		m_set.reset(new intra::Dataset());
+		intra::Dataset *pSet = m_set.get();
 		ASSERT_TRUE(pSet != nullptr);
 	}
 	virtual void TearDown() {
@@ -54,12 +54,12 @@ protected:
 	}
 };
 ///////////////////////////////////////
-std::unique_ptr<Dataset> DatasetTest::m_globalset;
+std::unique_ptr<intra::Dataset> DatasetTest::m_globalset;
 // class DatasetTest
 //
 //////////////////////////////////////////////////////
 TEST_F(DatasetTest,testDataset) {
-	Dataset *pSet = m_globalset.get();
+	intra::Dataset *pSet = m_globalset.get();
 	ASSERT_TRUE(pSet != nullptr);
 	size_t nCols = pSet->cols();
 	size_t nRows = pSet->rows();
@@ -74,12 +74,12 @@ TEST_F(DatasetTest,testDataset) {
 } // testDataset
 //////////////////////////////////////////////////
 TEST_F(DatasetTest,createVariableBySigle) {
-	String sigle = "testSigle";
-	String name = "testName";
-	String desc = "testDesc";
+	intra::String sigle = "testSigle";
+	intra::String name = "testName";
+	intra::String desc = "testDesc";
 	int nId = 50;
 	int nVersion = 15;
-	Dataset *pSet = m_set.get();
+	intra::Dataset *pSet = m_set.get();
 	ASSERT_TRUE(pSet != nullptr);
 	pSet->id(nId);
 	pSet->version(nVersion);
@@ -87,7 +87,7 @@ TEST_F(DatasetTest,createVariableBySigle) {
 	pSet->name(name);
 	pSet->description(desc);
 	//
-	String varSigle = "testVar";
+	intra::String varSigle = "testVar";
 	//int nVarId = 46;
 	Variable *pVar = pSet->create_variable(varSigle);
 	EXPECT_TRUE(pVar != nullptr);
@@ -98,13 +98,13 @@ TEST_F(DatasetTest,createVariableBySigle) {
 	EXPECT_EQ(nSize, nActual);
 }
 TEST_F(DatasetTest,copyConstructorTest) {
-	String sigle = "testSigle";
-	String name = "testName";
-	String desc = "testDesc";
+	intra::String sigle = "testSigle";
+	intra::String name = "testName";
+	intra::String desc = "testDesc";
 	int nId = 50;
 	int nVersion = 15;
 	//
-	Dataset *pSet = m_set.get();
+	intra::Dataset *pSet = m_set.get();
 	ASSERT_TRUE(pSet != nullptr);
 	//
 	pSet->id(nId);
@@ -113,14 +113,14 @@ TEST_F(DatasetTest,copyConstructorTest) {
 	pSet->name(name);
 	pSet->description(desc);
 	//
-	Dataset oSet(*pSet);
+	intra::Dataset oSet(*pSet);
 	EXPECT_EQ(nId, oSet.id());
 	EXPECT_EQ(nVersion, oSet.version());
 	EXPECT_EQ(sigle, oSet.sigle());
 	EXPECT_EQ(name, oSet.name());
 	EXPECT_EQ(desc, oSet.description());
 	//
-	Dataset bSet = *pSet;
+	intra::Dataset bSet = *pSet;
 	EXPECT_EQ(nId, bSet.id());
 	EXPECT_EQ(nVersion, bSet.version());
 	EXPECT_EQ(sigle, bSet.sigle());
@@ -128,7 +128,7 @@ TEST_F(DatasetTest,copyConstructorTest) {
 	EXPECT_EQ(desc, bSet.description());
 } //copyConstructorTest
 TEST_F(DatasetTest,constructorTest1) {
-	Dataset *pSet = m_set.get();
+	intra::Dataset *pSet = m_set.get();
 	ASSERT_TRUE(pSet != nullptr);
 	EXPECT_EQ(0, pSet->id());
 	EXPECT_EQ(1, pSet->version());

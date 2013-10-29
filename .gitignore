@@ -18,6 +18,11 @@
 *.lib
 *.obj
 *.exe
+*.ilk
+*.pdb
+*.pch
+:memory
+core
 [Debug]
 [Release]
 [x64]
