@@ -11,3 +11,14 @@
 *.lai
 *.la
 *.a
+*.suo
+*.db
+*.sdf
+*.opensdf
+*.lib
+*.obj
+*.exe
+[Debug]
+[Release]
+[x64]
+
