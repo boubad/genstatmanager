@@ -9,11 +9,11 @@
 #ifdef __GNUC__
 const char *IntraTestEnv::TEST_FILENAME = "./testdata/data_2013.txt";
 //const char *IntraTestEnv::DATABASE_FILENAME = "./testdata/testdb.db";
-#else
-const char *IntraTestEnv::TEST_FILENAME = "..\\testdata\\data_2013.txt";
-//const char *IntraTestEnv::DATABASE_FILENAME = "..\\testdata\\testdb.db";
-#endif
 const char *IntraTestEnv::DATABASE_FILENAME = ":memory";
+#else
+const char *IntraTestEnv::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
+const char *IntraTestEnv::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
+#endif
 const char *IntraTestEnv::TEST_DATASET_SIGLE = "TESTSET";
 ////////////////////////////////
 IntraTestEnv *global_intraenv = nullptr;
