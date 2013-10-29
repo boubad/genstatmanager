@@ -6,8 +6,10 @@
  */
 ////////////////////////////////
 #include "statdata.h"
+#include "statdatamanager.h"
 //////////////////////////
 #include <gtest/gtest.h>
+#include "IntraTestEnv.h"
 ////////////////////////////
 namespace {
 /////////////////////////////
@@ -15,11 +17,29 @@ using namespace intra;
 ////////////////////////////////////////////
 class DatasetTest: public ::testing::Test {
 protected:
+	static std::unique_ptr<Dataset> m_globalset;
 	std::unique_ptr<Dataset> m_set;
 	typedef Dataset::VariableMap VariableMap;
 	typedef Dataset::IndivMap IndivMap;
 	typedef Dataset::ValueVector ValueVector;
 protected:
+	static void SetUpTestCase() {
+		m_globalset.reset(new Dataset());
+		Dataset *pSet = m_globalset.get();
+		ASSERT_TRUE(pSet != nullptr);
+		String databasename;
+		String datasetSigle;
+		global_intraenv->get_database_name(databasename);
+		global_intraenv->get_dataset_sigle(datasetSigle);
+		pSet->sigle(datasetSigle);
+		intrasqlite::StatDataManager oMan(databasename);
+		ASSERT_TRUE(oMan.is_valid());
+		bool bRet = oMan.load_dataset(*pSet);
+		ASSERT_TRUE(bRet);
+	} // SetUpTestCase
+	static void TearSownTestCase() {
+		m_globalset.reset();
+	} // TearDownTestCase
 	DatasetTest() {
 	}
 	virtual ~DatasetTest() {
@@ -33,8 +53,25 @@ protected:
 		m_set.reset();
 	}
 };
+///////////////////////////////////////
+std::unique_ptr<Dataset> DatasetTest::m_globalset;
 // class DatasetTest
 //
+//////////////////////////////////////////////////////
+TEST_F(DatasetTest,testDataset) {
+	Dataset *pSet = m_globalset.get();
+	ASSERT_TRUE(pSet != nullptr);
+	size_t nCols = pSet->cols();
+	size_t nRows = pSet->rows();
+	std::vector<PVariable> oVars;
+	pSet->get_variables(oVars);
+	size_t nx = oVars.size();
+	ASSERT_EQ(nCols, nx);
+	std::vector<PIndiv> oInds;
+	pSet->get_indivs(oInds);
+	size_t ny = oInds.size();
+	ASSERT_EQ(nRows, ny);
+} // testDataset
 //////////////////////////////////////////////////
 TEST_F(DatasetTest,createVariableBySigle) {
 	String sigle = "testSigle";
@@ -54,7 +91,7 @@ TEST_F(DatasetTest,createVariableBySigle) {
 	//int nVarId = 46;
 	Variable *pVar = pSet->create_variable(varSigle);
 	EXPECT_TRUE(pVar != nullptr);
-	EXPECT_EQ(varSigle,pVar->sigle());
+	EXPECT_EQ(varSigle, pVar->sigle());
 	VariableMap &oVars = pSet->variables();
 	size_t nSize = 1;
 	size_t nActual = oVars.size();
@@ -95,10 +132,14 @@ TEST_F(DatasetTest,constructorTest1) {
 	ASSERT_TRUE(pSet != nullptr);
 	EXPECT_EQ(0, pSet->id());
 	EXPECT_EQ(1, pSet->version());
-	EXPECT_EQ(false, pSet->is_changed());
-	EXPECT_EQ(false, pSet->is_removeable());
-	EXPECT_EQ(false, pSet->is_updateable());
-	EXPECT_EQ(false, pSet->is_writeable());
+	bool bRet = pSet->is_changed();
+	EXPECT_FALSE(bRet);
+	bRet = pSet->is_removeable();
+	EXPECT_FALSE(bRet);
+	bRet = pSet->is_updateable();
+	EXPECT_FALSE(bRet);
+	bRet = pSet->is_writeable();
+	EXPECT_FALSE(bRet);
 	//
 	pSet->sigle("testSigle");
 	EXPECT_EQ(true, pSet->is_changed());
@@ -114,9 +155,10 @@ TEST_F(DatasetTest,constructorTest1) {
 	EXPECT_EQ(true, pSet->is_removeable());
 	EXPECT_EQ(true, pSet->is_updateable());
 	//
-	pSet->id(0);
-	EXPECT_EQ(false, pSet->is_updateable());
-	EXPECT_EQ(true, pSet->is_writeable());
+//	pSet->id(0);
+//	bRet = pSet->is_updateable();
+//	EXPECT_TRUE(bRet);
+//	EXPECT_EQ(true, pSet->is_writeable());
 	//
 	VariableMap &oVars = pSet->variables();
 	EXPECT_TRUE(oVars.empty());

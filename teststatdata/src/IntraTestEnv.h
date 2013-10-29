@@ -25,19 +25,19 @@ public:
 	virtual void SetUp();
 	virtual void TearDown();
 public:
-	StatDataManager *data_manager(void) const {
-		StatDataManager *p = m_manager.get();
-		EXPECT_TRUE(p != nullptr);
-		return (p);
-	} // data_manager
 	ImportDataType *import_data(void) const {
 		ImportDataType *p = m_import.get();
 		EXPECT_TRUE(p != nullptr);
 		return (p);
 	}
+	void get_database_name(String &s) const {
+		s = DATABASE_FILENAME;
+	}
+	void get_dataset_sigle(String &s) const {
+		s = TEST_DATASET_SIGLE;
+	}
 private:
 	std::unique_ptr<ImportDataType> m_import;
-	std::unique_ptr<StatDataManager> m_manager;
 private:
 	static const char *TEST_FILENAME;
 	static const char *DATABASE_FILENAME;

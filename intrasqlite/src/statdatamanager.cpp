@@ -271,7 +271,9 @@ bool StatDataManager::load_dataset(intra::Dataset &cur) {
 				if (p != nullptr) {
 					p->id(val.id());
 					p->version(val.version());
-					p->value(val.value());
+					if (val.is_valid()) {
+						p->value(val.value());
+					}
 					p->is_changed(false);
 				}
 			} // not_empty
@@ -362,6 +364,7 @@ bool StatDataManager::insert_dataset(const intra::Dataset &cur) {
 		this->rollback_transaction();
 		return (false);
 	}
+	intra::String sigle = cur.sigle();
 	if (!stmt.set_parameter(1, cur.sigle())) {
 		this->rollback_transaction();
 		return (false);
@@ -382,7 +385,14 @@ bool StatDataManager::insert_dataset(const intra::Dataset &cur) {
 		this->rollback_transaction();
 		return (false);
 	}
-	return (true);
+	intra::Dataset xcur;
+	if (!this->get_dataset_by_sigle(sigle, xcur)) {
+		return (false);
+	}
+	int nId = xcur.id();
+	assert(nId != 0);
+	bool bRet = this->check_pred_dataset(nId);
+	return (bRet);
 } // insert_dataset
 bool StatDataManager::get_dataset_by_sigle(const intra::String &xSigle,
 		intra::Dataset &cur) {

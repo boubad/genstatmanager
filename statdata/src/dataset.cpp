@@ -5,14 +5,162 @@
  *      Author: boubad
  */
 #include "dataset.h"
-///////////////////////////////////////
-#include <boost/algorithm/string.hpp>
-////////////////////////////////
 #include "variable.h"
 #include "indiv.h"
 #include "value.h"
-///////////////////////////////
+///////////////////////////////////////
+#include <boost/algorithm/string.hpp>
+////////////////////////////////
 namespace intra {
+/////////////////////////////////////////
+void Dataset::get_indivs_values(const Indiv *pInd, AnyIdMap &oRes) const {
+	oRes.clear();
+	if (pInd != nullptr) {
+		const ValueVector &oVec = this->m_vals;
+		auto iend = oVec.end();
+		int nId = pInd->id();
+		for (auto it = oVec.begin(); it != iend; ++it) {
+			PValue v = *it;
+			const Value *p = v.get();
+			if ((p != nullptr) && p->is_valid()) {
+				int nVarId = p->variable_id();
+				const Indiv *ppInd = p->indiv();
+				if (pInd == ppInd) {
+					boost::any val = p->value();
+					oRes[nVarId] = val;
+				} else if ((nId != 0) && (p->indiv_id() == nId)) {
+					boost::any val = p->value();
+					oRes[nVarId] = val;
+				}
+			} // p
+		} // it
+	} // pvar
+}
+void Dataset::get_indivs_values(const intra::String &sigle,
+		AnyIdMap &oRes) const {
+	const Indiv *pInd = this->find_indiv_by_sigle(sigle);
+	if (pInd != nullptr) {
+		this->get_indivs_values(pInd, oRes);
+	} else {
+		oRes.clear();
+	}
+}
+void Dataset::get_indivs_values(int nIndivId, AnyIdMap &oRes) const {
+	const Indiv *pInd = this->find_indiv_by_id(nIndivId);
+	if (pInd != nullptr) {
+		this->get_indivs_values(pInd, oRes);
+	} else {
+		oRes.clear();
+	}
+}
+//
+void Dataset::get_variables_values(const Variable *pVar, AnyIdMap &oRes) const {
+	oRes.clear();
+	if (pVar != nullptr) {
+		const ValueVector &oVec = this->m_vals;
+		auto iend = oVec.end();
+		int nId = pVar->id();
+		for (auto it = oVec.begin(); it != iend; ++it) {
+			PValue v = *it;
+			const Value *p = v.get();
+			if ((p != nullptr) && p->is_valid()) {
+				int nIndivId = p->indiv_id();
+				if ((nId != 0) && (p->variable_id() == nId)) {
+					boost::any val = p->value();
+					oRes[nIndivId] = val;
+				} else {
+					const Variable *ppv = p->variable();
+					if (ppv == pVar) {
+						boost::any val = p->value();
+						oRes[nIndivId] = val;
+					}
+				}
+			} // p
+		} // it
+	} // pvar
+}
+void Dataset::get_variables_values(const intra::String &sigle,
+		AnyIdMap &oRes) const {
+	const Variable *pVar = this->find_variable_by_sigle(sigle);
+	if (pVar != nullptr) {
+		this->get_variables_values(pVar, oRes);
+	} else {
+		oRes.clear();
+	}
+}
+void Dataset::get_variables_values(int nVarId, AnyIdMap &oRes) const {
+	const Variable *pVar = this->find_variable_by_id(nVarId);
+	if (pVar != nullptr) {
+		this->get_variables_values(pVar, oRes);
+	} else {
+		oRes.clear();
+	}
+}
+//////////////////////////////////////
+void Dataset::get_variables(std::vector<PVariable> &oVec) const {
+	oVec.clear();
+	const VariableMap &oMap = this->m_vars;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PVariable v = (*it).second;
+		oVec.push_back(v);
+	} // it
+} // getVariables
+void Dataset::get_variables_ids(std::vector<int> &oVec) const {
+	oVec.clear();
+	const VariableMap &oMap = this->m_vars;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PVariable v = (*it).second;
+		const Variable *p = v.get();
+		if (p != nullptr) {
+			int nId = p->id();
+			oVec.push_back(nId);
+		}
+	} // it
+} // get_variables_ids
+void Dataset::get_variables_sigles(std::vector<String> &oVec) const {
+	oVec.clear();
+	const VariableMap &oMap = this->m_vars;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PVariable v = (*it).second;
+		const Variable *p = v.get();
+		if (p != nullptr) {
+			String s = p->sigle();
+			oVec.push_back(s);
+		}
+	} // it
+} // get_variables_sigles
+void Dataset::get_indivs(std::vector<PIndiv> &oVec) const {
+	oVec.clear();
+	const IndivMap &oMap = this->m_inds;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PIndiv v = (*it).second;
+		oVec.push_back(v);
+	} // it
+} // get_indivs
+void Dataset::get_indivs_ids(std::vector<int> &oVec) const {
+	oVec.clear();
+	const IndivMap &oMap = this->m_inds;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PIndiv v = (*it).second;
+		const Indiv *p = v.get();
+		if (p != nullptr) {
+			int nId = p->id();
+			oVec.push_back(nId);
+		}
+	} // it
+} // get_indivs_ids
+void Dataset::get_indivs_sigles(std::vector<String> &oVec) const {
+	oVec.clear();
+	const IndivMap &oMap = this->m_inds;
+	for (auto it = oMap.begin(); it != oMap.end(); ++it) {
+		PIndiv v = (*it).second;
+		const Indiv *p = v.get();
+		if (p != nullptr) {
+			String s = p->sigle();
+			oVec.push_back(s);
+		}
+	} // it
+} // get_indivs_ids
 ////////////////////////////////
 Value *Dataset::create_value(int nVarId, int nIndId) {
 	Value *p = const_cast<Value *>(this->find_value_by_variable_indiv(nVarId,
@@ -34,7 +182,7 @@ Value *Dataset::create_value(int nVarId, int nIndId) {
 	}
 	PValue oVal = std::make_shared < Value > (pVar, pInd);
 	pSet->values().push_back(oVal);
-	return p;
+	return oVal.get();
 } // createValue
 Value *Dataset::create_value(const String &sigleVar, const String &sigleInd) {
 	Value *p = const_cast<Value *>(this->find_value_by_variable_indiv(sigleVar,
@@ -57,7 +205,7 @@ Value *Dataset::create_value(const String &sigleVar, const String &sigleInd) {
 	}
 	PValue oVal = std::make_shared < Value > (pVar, pInd);
 	pSet->values().push_back(oVal);
-	return p;
+	return oVal.get();
 } // create_value
 Indiv *Dataset::create_indiv(int nIndId) {
 	Indiv *p = const_cast<Indiv *>(this->find_indiv_by_id(nIndId));
