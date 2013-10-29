@@ -11,8 +11,13 @@ const char *IntraTestEnv::TEST_FILENAME = "./testdata/data_2013.txt";
 //const char *IntraTestEnv::DATABASE_FILENAME = "./testdata/testdb.db";
 const char *IntraTestEnv::DATABASE_FILENAME = ":memory";
 #else
+#ifdef WIN64
 const char *IntraTestEnv::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
 const char *IntraTestEnv::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
+#else
+const char *IntraTestEnv::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
+const char *IntraTestEnv::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
+#endif
 #endif
 const char *IntraTestEnv::TEST_DATASET_SIGLE = "TESTSET";
 ////////////////////////////////

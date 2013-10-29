@@ -24,6 +24,9 @@ extern bool process_data(const std::string &srcfilename,
 	try {
 		ImportDataType oData;
 		std::ifstream in(srcfilename.c_str());
+		if (!in.is_open()){
+			return (false);
+		}
 		oData.open(in, delim, na);
 		size_t ncols = oData.cols();
 		if (ncols < 1) {

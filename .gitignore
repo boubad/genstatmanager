@@ -21,6 +21,10 @@
 *.ilk
 *.pdb
 *.pch
+*.tlog
+*.log
+*.idb
+*.lastbuildstate
 :memory
 core
 [Debug]
