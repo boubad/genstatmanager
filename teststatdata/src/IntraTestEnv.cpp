@@ -6,15 +6,28 @@
  */
 #include "IntraTestEnv.h"
 //////////////////////////////
+#ifndef INTRA_USE_WSTRING
 #ifdef __GNUC__
 const char *IntraTestEnv::TEST_FILENAME = "./testdata/data_2013.txt";
+const char *IntraTestEnv::DATABASE_FILENAME = ":memory";
 //const char *IntraTestEnv::DATABASE_FILENAME = "./testdata/testdb.db";
 #else
-const char *IntraTestEnv::TEST_FILENAME = "..\\testdata\\data_2013.txt";
-//const char *IntraTestEnv::DATABASE_FILENAME = "..\\testdata\\testdb.db";
+const char *IntraTestEnv::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
+const char *IntraTestEnv::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
 #endif
-const char *IntraTestEnv::DATABASE_FILENAME = ":memory";
 const char *IntraTestEnv::TEST_DATASET_SIGLE = "TESTSET";
+#else
+////////////////////////////////////////////////////
+#ifdef __GNUC__
+const wchar_t *IntraTestEnv::TEST_FILENAME = L"./testdata/data_2013.txt";
+const wchar_t *IntraTestEnv::DATABASE_FILENAME = L":memory";
+//const wchar_t *IntraTestEnv::DATABASE_FILENAME = L"./testdata/testdb.db";
+#else
+const wchar_t *IntraTestEnv::TEST_FILENAME = L"..\\teststatdata\\testdata\\data_2013.txt";
+const wchar_t *IntraTestEnv::DATABASE_FILENAME = L"..\\teststatdata\\testdata\\testdb.db";
+#endif
+const wchar_t *IntraTestEnv::TEST_DATASET_SIGLE = L"TESTSET";
+#endif // INTRA_USE_WSTRING
 ////////////////////////////////
 IntraTestEnv *global_intraenv = nullptr;
 /////////////////////////////
@@ -24,21 +37,17 @@ IntraTestEnv::~IntraTestEnv() {
 
 }
 void IntraTestEnv::SetUp() {
-	char delim('\t');
-	String na("na");
-	String filename(TEST_FILENAME);
-	String datasetSigle(TEST_DATASET_SIGLE);
-	String databasename(DATABASE_FILENAME);
+	StringType filename(TEST_FILENAME);
+	StringType datasetSigle(TEST_DATASET_SIGLE);
+	StringType databasename(DATABASE_FILENAME);
 	//
-	bool bRet = intra::process_data(filename, databasename, datasetSigle, delim,
-			na);
+	PredStatDataManager oMan;
+	bool bRet = oMan.open(databasename);
+	ASSERT_TRUE(bRet);
+	//
+	bRet = oMan.process_data(filename, datasetSigle);
 	ASSERT_EQ(true, bRet);
-	//
-	m_import.reset(new ImportDataType());
-	ImportDataType *pImport = m_import.get();
-	ASSERT_TRUE(pImport != nullptr);
 } // SetUp
 void IntraTestEnv::TearDown() {
-	m_import.reset();
 } // TearDown
 

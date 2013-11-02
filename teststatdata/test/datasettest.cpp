@@ -5,40 +5,23 @@
  *      Author: boubad
  */
 ////////////////////////////////
-#include "statdata.h"
-#include "statdatamanager.h"
+#include "preddataset.h"
 //////////////////////////
-#include <gtest/gtest.h>
 #include "IntraTestEnv.h"
 ////////////////////////////
 namespace {
 /////////////////////////////
-using namespace intra;
-////////////////////////////////////////////
 class DatasetTest: public ::testing::Test {
+	
 protected:
-	static std::unique_ptr<Dataset> m_globalset;
 	std::unique_ptr<Dataset> m_set;
 	typedef Dataset::VariableMap VariableMap;
 	typedef Dataset::IndivMap IndivMap;
 	typedef Dataset::ValueVector ValueVector;
 protected:
 	static void SetUpTestCase() {
-		m_globalset.reset(new Dataset());
-		Dataset *pSet = m_globalset.get();
-		ASSERT_TRUE(pSet != nullptr);
-		String databasename;
-		String datasetSigle;
-		global_intraenv->get_database_name(databasename);
-		global_intraenv->get_dataset_sigle(datasetSigle);
-		pSet->sigle(datasetSigle);
-		intrasqlite::StatDataManager oMan(databasename);
-		ASSERT_TRUE(oMan.is_valid());
-		bool bRet = oMan.load_dataset(*pSet);
-		ASSERT_TRUE(bRet);
 	} // SetUpTestCase
 	static void TearSownTestCase() {
-		m_globalset.reset();
 	} // TearDownTestCase
 	DatasetTest() {
 	}
@@ -54,25 +37,6 @@ protected:
 	}
 };
 ///////////////////////////////////////
-std::unique_ptr<Dataset> DatasetTest::m_globalset;
-// class DatasetTest
-//
-//////////////////////////////////////////////////////
-TEST_F(DatasetTest,testDataset) {
-	Dataset *pSet = m_globalset.get();
-	ASSERT_TRUE(pSet != nullptr);
-	size_t nCols = pSet->cols();
-	size_t nRows = pSet->rows();
-	std::vector<PVariable> oVars;
-	pSet->get_variables(oVars);
-	size_t nx = oVars.size();
-	ASSERT_EQ(nCols, nx);
-	std::vector<PIndiv> oInds;
-	pSet->get_indivs(oInds);
-	size_t ny = oInds.size();
-	ASSERT_EQ(nRows, ny);
-} // testDataset
-//////////////////////////////////////////////////
 TEST_F(DatasetTest,createVariableBySigle) {
 	String sigle = "testSigle";
 	String name = "testName";

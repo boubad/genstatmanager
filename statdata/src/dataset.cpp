@@ -13,7 +13,7 @@
 ////////////////////////////////
 namespace intra {
 /////////////////////////////////////////
-void Dataset::get_indivs_values(const Indiv *pInd, AnyIdMap &oRes) const {
+void Dataset::get_indiv_values(const Indiv *pInd, AnyIdMap &oRes) const {
 	oRes.clear();
 	if (pInd != nullptr) {
 		const ValueVector &oVec = this->m_vals;
@@ -36,25 +36,25 @@ void Dataset::get_indivs_values(const Indiv *pInd, AnyIdMap &oRes) const {
 		} // it
 	} // pvar
 }
-void Dataset::get_indivs_values(const intra::String &sigle,
+void Dataset::get_indiv_values(const intra::String &sigle,
 		AnyIdMap &oRes) const {
 	const Indiv *pInd = this->find_indiv_by_sigle(sigle);
 	if (pInd != nullptr) {
-		this->get_indivs_values(pInd, oRes);
+		this->get_indiv_values(pInd, oRes);
 	} else {
 		oRes.clear();
 	}
 }
-void Dataset::get_indivs_values(int nIndivId, AnyIdMap &oRes) const {
+void Dataset::get_indiv_values(int nIndivId, AnyIdMap &oRes) const {
 	const Indiv *pInd = this->find_indiv_by_id(nIndivId);
 	if (pInd != nullptr) {
-		this->get_indivs_values(pInd, oRes);
+		this->get_indiv_values(pInd, oRes);
 	} else {
 		oRes.clear();
 	}
 }
 //
-void Dataset::get_variables_values(const Variable *pVar, AnyIdMap &oRes) const {
+void Dataset::get_variable_values(const Variable *pVar, AnyIdMap &oRes) const {
 	oRes.clear();
 	if (pVar != nullptr) {
 		const ValueVector &oVec = this->m_vals;
@@ -79,19 +79,19 @@ void Dataset::get_variables_values(const Variable *pVar, AnyIdMap &oRes) const {
 		} // it
 	} // pvar
 }
-void Dataset::get_variables_values(const intra::String &sigle,
+void Dataset::get_variable_values(const intra::String &sigle,
 		AnyIdMap &oRes) const {
 	const Variable *pVar = this->find_variable_by_sigle(sigle);
 	if (pVar != nullptr) {
-		this->get_variables_values(pVar, oRes);
+		this->get_variable_values(pVar, oRes);
 	} else {
 		oRes.clear();
 	}
 }
-void Dataset::get_variables_values(int nVarId, AnyIdMap &oRes) const {
+void Dataset::get_variable_values(int nVarId, AnyIdMap &oRes) const {
 	const Variable *pVar = this->find_variable_by_id(nVarId);
 	if (pVar != nullptr) {
-		this->get_variables_values(pVar, oRes);
+		this->get_variable_values(pVar, oRes);
 	} else {
 		oRes.clear();
 	}

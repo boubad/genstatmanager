@@ -68,6 +68,9 @@ public:
 	const Value *find_value_by_variable_indiv(int nVarId, int nIndId) const;
 	const Value *find_value_by_variable_indiv(const Variable *pVar,
 			const Indiv *pInd) const;
+	inline const Value *find_value_by_variable_indiv(const PVariable &oVar, const PIndiv &oInd) const {
+		return (this->find_value_by_variable_indiv(oVar.get(), oInd.get()));
+	}
 	inline size_t cols(void) const {
 		return (this->m_vars.size());
 	}
@@ -81,13 +84,20 @@ public:
 	void get_indivs_ids(std::vector<int> &oVec) const;
 	void get_indivs_sigles(std::vector<intra::String> &oVec) const;
 	//
-	void get_indivs_values(const Indiv *pInd, AnyIdMap &oRes) const;
-	void get_indivs_values(const intra::String &sigle, AnyIdMap &oRes) const;
-	void get_indivs_values(int nIndivId, AnyIdMap &oRes) const;
+	void get_indiv_values(const Indiv *pInd, AnyIdMap &oRes) const;
+	void get_indiv_values(const intra::String &sigle, AnyIdMap &oRes) const;
+	void get_indiv_values(int nIndivId, AnyIdMap &oRes) const;
+	inline void get_indiv_values(const PIndiv &oIndiv, AnyIdMap &oRes) const {
+		return (this->get_indiv_values(oIndiv.get(), oRes));
+	}
 	//
-	void get_variables_values(const Variable *pInd, AnyIdMap &oRes) const;
-	void get_variables_values(const intra::String &sigle, AnyIdMap &oRes) const;
-	void get_variables_values(int nVarId, AnyIdMap &oRes) const;
+	void get_variable_values(const Variable *pInd, AnyIdMap &oRes) const;
+	void get_variable_values(const intra::String &sigle, AnyIdMap &oRes) const;
+	void get_variable_values(int nVarId, AnyIdMap &oRes) const;
+	inline void get_variable_values(const PVariable &oVar, AnyIdMap &oRes) const {
+		return (this->get_variable_values(oVar.get(),oRes));
+	}
+	//
 public:
 	Variable *create_variable(const intra::String &sigle);
 	Variable *create_variable(int nVarId);

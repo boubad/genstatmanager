@@ -52,9 +52,9 @@ inline void my_check_string(const std::wstring &s0, std::wstring &s) {
 	} // it
 } // my_check_string
 ///////////////////////////////////
-template<class ALLOCVECTSTRING, class TSTRING = std::string,
-		class ALLOCTSTRING = std::allocator<TSTRING>,
-		class TSTREAM = std::istream, typename TCHAR = char>
+template<class ALLOCVECTSTRING, class TSTRING,
+		class ALLOCTSTRING,
+		class TSTREAM , typename TCHAR>
 void intra_read_txt_stream(TSTREAM &in,
 		std::vector<TSTRING, ALLOCTSTRING> &header,
 		std::vector<std::vector<TSTRING, ALLOCTSTRING>, ALLOCVECTSTRING> &oVec,
@@ -113,7 +113,7 @@ void intra_read_txt_stream(TSTREAM &in,
 	} // not eof
 } // intra_read_txt_stream
 ///////////////////////////////////////
-template<class ALLOCVECTSTRING, class ALLOCTSTRING = std::allocator<std::string> >
+template<class ALLOCVECTSTRING, class ALLOCTSTRING >
 void intra_read_tsv(const std::string &filename,
 		std::vector<std::string, ALLOCTSTRING> &header,
 		std::vector<std::vector<std::string, ALLOCTSTRING>, ALLOCVECTSTRING> &oVec) {
@@ -126,7 +126,7 @@ void intra_read_tsv(const std::string &filename,
 		intra_read_txt_stream(in, header, oVec, delim, strNA);
 	}
 } // intra_read_tsv
-template<class ALLOCVECTSTRING, class ALLOCTSTRING = std::allocator<std::string> >
+template<class ALLOCVECTSTRING, class ALLOCTSTRING >
 void intra_read_csv(const std::string &filename,
 		std::vector<std::string, ALLOCTSTRING> &header,
 		std::vector<std::vector<std::string, ALLOCTSTRING>, ALLOCVECTSTRING> &oVec) {
@@ -140,7 +140,7 @@ void intra_read_csv(const std::string &filename,
 	}
 } // intra_read_csv
 template<class ALLOCVECTSTRING,
-		class ALLOCTSTRING = std::allocator<std::wstring> >
+		class ALLOCTSTRING >
 void intra_read_tsv(const std::wstring &filename,
 		std::vector<std::wstring, ALLOCTSTRING> &header,
 		std::vector<std::vector<std::wstring, ALLOCTSTRING>, ALLOCVECTSTRING> &oVec) {
@@ -156,7 +156,7 @@ void intra_read_tsv(const std::wstring &filename,
 	}
 } // intra_read_tsv
 template<class ALLOCVECTSTRING,
-		class ALLOCTSTRING = std::allocator<std::wstring> >
+		class ALLOCTSTRING>
 void intra_read_csv(const std::wstring &filename,
 		std::vector<std::wstring, ALLOCTSTRING> &header,
 		std::vector<std::vector<std::wstring, ALLOCTSTRING>, ALLOCVECTSTRING> &oVec) {
@@ -179,7 +179,7 @@ inline void intra_read_value(const std::string &s, boost::any &v) {
 		return;
 	}
 	char c = *(ss.begin());
-	if (std::isalpha(c)) {
+	if (isalpha(c)) {
 		v = boost::any(ss);
 	} else {
 		std::stringstream in(ss);
@@ -195,7 +195,7 @@ inline void intra_read_value(const std::wstring &s, boost::any &v) {
 		return;
 	}
 	wchar_t c = *(ss.begin());
-	if (std::isalpha(c)) {
+	if (isalpha(c)) {
 		v = boost::any(ss);
 	} else {
 		std::wstringstream in(ss);

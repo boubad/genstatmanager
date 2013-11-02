@@ -12,5 +12,11 @@
 int main(int argc, char *argv[]) {
 	global_intraenv = reinterpret_cast<IntraTestEnv *>(::testing::AddGlobalTestEnvironment(new IntraTestEnv()));
 	::testing::InitGoogleTest(&argc, argv);
-	return (RUN_ALL_TESTS());
+	int nRet = RUN_ALL_TESTS();
+#if (defined(_MSC_VER) && defined(_DEBUG))
+	int nx;
+	std::cout << std::endl << "Entrez un nombre pour quitter: ";
+	std::cin >> nx;
+#endif
+	return (nRet);
 }// main
