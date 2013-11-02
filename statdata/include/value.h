@@ -14,14 +14,13 @@
 /////////////////////////////////////////
 namespace intra {
 /////////////////////////////////////
-class Variable;
-class Indiv;
-//////////////////////////////////////
 class Value: public BaseItem {
+private:
+	int m_variableid;
+	int m_individ;
+	boost::any m_val;
 public:
 	Value();
-	Value(Variable *pVar, Indiv *pInd);
-	Value(Variable &oVar, Indiv &oInd);
 	Value(const Value &other);
 	Value & operator=(const Value &other);
 	virtual ~Value();
@@ -37,20 +36,12 @@ public:
 	inline void variable_id(int n) {
 		this->m_variableid = n;
 	}
-	inline Variable *variable(void) const {
-		return (this->m_pvar);
-	}
-	void variable(Variable *p);
 	inline int indiv_id(void) const {
 		return (this->m_individ);
 	}
 	inline void indiv_id(int n) {
 		this->m_individ = n;
 	}
-	inline Indiv *indiv(void) const {
-		return (this->m_pind);
-	}
-	void indiv(Indiv *p);
 	inline const boost::any & value(void) const {
 		return (this->m_val);
 	}
@@ -88,12 +79,6 @@ public:
 	double double_value(void) const;
 	bool string_value(std::string &s) const;
 	bool string_value(std::wstring &s) const;
-private:
-	int m_variableid;
-	int m_individ;
-	Variable *m_pvar;
-	Indiv *m_pind;
-	boost::any m_val;
 };
 // class Value
 ///////////////////////////////////////////

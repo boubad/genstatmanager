@@ -12,27 +12,62 @@
 ///////////////////////////////
 namespace intra {
 //////////////////////////////
-class Indiv : public DatasetChild {
+template<class TSTRING>
+class Indiv: public DatasetChild<TSTRING> {
 public:
-	Indiv();
-	Indiv(Dataset &oSet);
-	Indiv(Dataset *pSet);
-	Indiv(const Indiv &other);
-	Indiv & operator=(const Indiv &other);
-	virtual ~Indiv();
+	typedef TSTRING String;
 public:
-	bool operator==(const Indiv &other) const;
-	bool operator<(const Indiv &other) const;
+	Indiv() {
+	}
+	template<class TSTRING, class ALLOCVECVAR, class ALLOCVECIND,
+			class ALLOCVECVAL>
+	Indiv(Dataset<TSTRING, ALLOCVECVAR, ALLOCVECIND, ALLOCVECVAL> &oSet) :
+			DatasetChild(oSet) {
+	}
+	template<class TSTRING, class ALLOCVECVAR, class ALLOCVECIND,
+			class ALLOCVECVAL>
+	Indiv(Dataset<TSTRING, ALLOCVECVAR, ALLOCVECIND, ALLOCVECVAL> *pSet) :
+			DatasetChild<TSTRING>(pSet) {
+	}
+	Indiv(const Indiv<TSTRING> &other) :
+			DatasetChild<TSTRING>(other), m_status(other.m_status) {
+	}
+	Indiv<TSTRING> & operator=(const Indiv<TSTRING> &other) {
+		if (this != &other) {
+			DatasetChild<TSTRING>::operator=(other);
+			this->m_status = other.m_status;
+		}
+		return (*this);
+	}
+	virtual ~Indiv() {
+	}
+public:
+	bool operator==(const Indiv<TSTRING> &other) const {
+		return (DatasetChild<TSTRING>::operator==(other));
+	}
+	bool operator<(const Indiv<TSTRING> &other) const {
+		return (DatasetChild<TSTRING>::operator<(other));
+	}
 public:
 	inline const String & status(void) const {
 		return (this->m_status);
 	}
-	void status(const String &s);
-protected:
-	virtual void post_change_sigle(const String &oldSigle, const String &newSigle);
+	void status(const String &s) {
+		String ss = trim(s);
+		if (ss.length() > 15) {
+			ss = trim(ss.substr(0, 15));
+		}
+		String old = to_upper(this->m_status);
+		String sx = to_upper(ss);
+		if (sx != old) {
+			this->m_status = ss;
+			this->is_changed(true);
+		}
+	}
 private:
 	String m_status;
-};// class Indiv
+};
+// class Indiv
 ////////////////////////////////
 }// namespace intra
 ////////////////////////////////

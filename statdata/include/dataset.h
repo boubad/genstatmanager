@@ -11,45 +11,71 @@
 #include <map>
 #include <vector>
 #include <memory>
+#include <algorithm>
 //////////////////////////////
-#include <boost/any.hpp>
-//////////////////////////////
-#include "nameditem.h"
+#include "indiv.h"
+#include "variable.h"
+#include "value.h"
 ///////////////////////////////
 namespace intra {
-class Variable;
-class Indiv;
-class Value;
-/////////////////////////////////////
-typedef std::shared_ptr<Variable> PVariable;
-typedef std::shared_ptr<Indiv> PIndiv;
-typedef std::shared_ptr<Value> PValue;
-typedef std::map<int,boost::any> AnyIdMap;
-///////////////////////////////////
-class Dataset: public NamedItem {
+//////////////////////////////////
+template<class TSTRING = std::string>
+class Dataset: public NamedItem<TSTRING> {
 public:
-	typedef std::map<intra::String, PVariable> VariableMap;
-	typedef std::map<intra::String, PIndiv> IndivMap;
+	typedef TSTRING String;
+	typedef Variable<TSTRING> VariableType;
+	typedef Indiv<TSTRING> IndivType;
+	typedef std::shared_ptr<VariableType> PVariable;
+	typedef std::shared_ptr<IndivType> PIndiv;
+	typedef std::shared_ptr<Value> PValue;
+	typedef NamedItem<TSTRING> NamedItemType;
+	typedef std::vector<PVariable> VariableVector;
+	typedef std::vector<PIndiv> IndivVector;
 	typedef std::vector<PValue> ValueVector;
+	typedef Dataset<TSTRING> DatasetType;
+private:
+	VariableVector m_vars;
+	IndivVector m_inds;
+	ValueVector m_vals;
 public:
-	Dataset();
-	Dataset(const Dataset &other);
-	Dataset & operator=(const Dataset &other);
-	virtual ~Dataset();
+	Dataset() {
+	}
+	Dataset(const DatasetTYpe &other) :
+			NamedItemType(other), m_vars(other.m_vars), m_inds(other.m_inds), m_vals(
+					other.m_vals) {
+	}
+	DatasetType & operator=(const DatasetType &other) {
+		if (this != &other) {
+			NamedItemType::operator=(other);
+			this->m_vars = other.m_vars;
+			this->m_inds = other.m_inds;
+			this->m_vals = other.m_vals;
+		}
+		return (*this);
+	}
+	virtual ~Dataset() {
+	}
 public:
-	bool operator==(const Dataset &other) const;
-	bool operator<(const Dataset &other) const;
+	bool operator==(const Dataset &other) const {
+		if ((this->id() != 0) && (this->id() == other.id())) {
+			return (true);
+		}
+		return (NamedItemType::operator=(other));
+	}
+	bool operator<(const Dataset &other) const {
+		return (NamedItemType::operator<(other));
+	}
 public:
-	inline const VariableMap & variables(void) const {
+	inline const VariableVector & variables(void) const {
 		return (this->m_vars);
 	}
-	inline VariableMap & variables(void) {
+	inline VariablVector & variables(void) {
 		return (this->m_vars);
 	}
-	inline const IndivMap & indivs(void) const {
+	inline const IndivVector & indivs(void) const {
 		return (this->m_inds);
 	}
-	inline IndivMap & indivs(void) {
+	inline IndivVector & indivs(void) {
 		return (this->m_inds);
 	}
 	inline const ValueVector & values(void) const {
@@ -59,56 +85,96 @@ public:
 		return (this->m_vals);
 	}
 public:
-	const Variable *find_variable_by_sigle(const intra::String &s) const;
-	const Variable *find_variable_by_id(int nVarId) const;
-	const Indiv *find_indiv_by_sigle(const intra::String &s) const;
-	const Indiv *find_indiv_by_id(int nIndId) const;
-	const Value *find_value_by_variable_indiv(const intra::String &sigleVar,
-			const intra::String &sigleInd) const;
-	const Value *find_value_by_variable_indiv(int nVarId, int nIndId) const;
-	const Value *find_value_by_variable_indiv(const Variable *pVar,
-			const Indiv *pInd) const;
-	inline const Value *find_value_by_variable_indiv(const PVariable &oVar, const PIndiv &oInd) const {
-		return (this->find_value_by_variable_indiv(oVar.get(), oInd.get()));
+	void clear(void) {
+		this->m_vals.clear();
+		this->m_vars.clear();
+		this->m_inds.clear();
 	}
-	inline size_t cols(void) const {
-		return (this->m_vars.size());
-	}
-	inline size_t rows(void) const {
-		return (this->m_inds.size());
-	}
-	void get_variables(std::vector<PVariable> &oVec) const;
-	void get_variables_ids(std::vector<int> &oVec) const;
-	void get_variables_sigles(std::vector<intra::String> &oVec) const;
-	void get_indivs(std::vector<PIndiv> &oVec) const;
-	void get_indivs_ids(std::vector<int> &oVec) const;
-	void get_indivs_sigles(std::vector<intra::String> &oVec) const;
-	//
-	void get_indiv_values(const Indiv *pInd, AnyIdMap &oRes) const;
-	void get_indiv_values(const intra::String &sigle, AnyIdMap &oRes) const;
-	void get_indiv_values(int nIndivId, AnyIdMap &oRes) const;
-	inline void get_indiv_values(const PIndiv &oIndiv, AnyIdMap &oRes) const {
-		return (this->get_indiv_values(oIndiv.get(), oRes));
-	}
-	//
-	void get_variable_values(const Variable *pInd, AnyIdMap &oRes) const;
-	void get_variable_values(const intra::String &sigle, AnyIdMap &oRes) const;
-	void get_variable_values(int nVarId, AnyIdMap &oRes) const;
-	inline void get_variable_values(const PVariable &oVar, AnyIdMap &oRes) const {
-		return (this->get_variable_values(oVar.get(),oRes));
-	}
-	//
-public:
-	Variable *create_variable(const intra::String &sigle);
-	Variable *create_variable(int nVarId);
-	Indiv *create_indiv(const intra::String &sigle);
-	Indiv *create_indiv(int nIndId);
-	Value *create_value(const intra::String &sigleVar, const intra::String &sigleInd);
-	Value *create_value(int nVarId, int nIndId);
-private:
-	VariableMap m_vars;
-	IndivMap m_inds;
-	ValueVector m_vals;
+	const VariableType *find_variable(int nVarId) const {
+		VariableType *pRet = nullptr;
+		const VariableVector &oVec = this->m_vars;
+		auto iend = oVec.end();
+		auto it = std::find_if(oVec.begin(), iend,
+				[=](const PVariable &oVar)->bool {
+					const VariableType *p = oVar.get();
+					return ((p != nullptr) && (p->id() == nVarId));
+				});
+		if (it != iend) {
+			pRet = (*it).get();
+		}
+		return pRet;
+	} // find_variable
+	const VariableType *find_variable(const String &sigle) const {
+		VariableType *pRet = nullptr;
+		const VariableVector &oVec = this->m_vars;
+		auto iend = oVec.end();
+		String ss = to_upper(trim(sigle));
+		auto it = std::find_if(oVec.begin(), iend,
+				[=](const PVariable &oVar)->bool {
+					const VariableType *p = oVar.get();
+					bool bRet = false;
+					if (p != nullptr) {
+						String s = to_upper(trim(p->sigle()));
+						bRet = (s == ss);
+					} // p
+					return bRet;
+				});
+		if (it != iend) {
+			pRet = (*it).get();
+		}
+		return pRet;
+	} // find_variable
+	const VariableType *find_variable(const VariableType &oVar) const {
+		VariableType *pRet = nullptr;
+		const VariableVector &oVec = this->m_vars;
+		auto iend = oVec.end();
+		String ss = to_upper(trim(oVar.sigle()));
+		int nVarId = oVar.id();
+		auto it = std::find_if(oVec.begin(), iend,
+				[=](const PVariable &o)->bool {
+					const VariableType *p = o.get();
+					bool bRet = false;
+					if (p != nullptr) {
+						if ((nVarId != 0) && (nVarId == p->id())) {
+							bRet = true;
+						} else {
+							String s = to_upper(trim(p->sigle()));
+							bRet = (s == ss);
+						}
+					} // p
+					return bRet;
+				});
+		if (it != iend) {
+			pRet = (*it).get();
+		}
+		return pRet;
+	} // find_variable
+	VariableType *register_variable(const VariableType &oVar) {
+		int nVarId = oVar.id();
+		String sigle = trim(oVar.sigle());
+		if ((nVarId == 0) && sigle.empty()) {
+			return (nullptr);
+		}
+		VariableType *pRet = const_cast<VariableType *>(this->find_variable(
+				oVar));
+		if (pRet != nullptr) {
+			*pRet = oVar;
+		} else {
+			PVariable o = std::make_shared < VariableType > (oVar);
+			pRet = o.get();
+			if (p != nullptr) {
+				this->m_vars.push_back(o);
+			}
+		}
+		return pRet;
+	} // register_variable
+	template <class ALLOCVEC>
+	size_t get_all_variables(std::vector<PVariable,ALLOCVEC> &oRes) const {
+		oRes.clear();
+		const VariableVector &oVec = this->m_vars;
+		oRes = std::vector<PVariable,ALLOCVEC>(oVec.begin(),oVec.end());
+		return (oRes.size());
+	}// getAllVariables
 };
 // class Dataset
 //////////////////////////////////

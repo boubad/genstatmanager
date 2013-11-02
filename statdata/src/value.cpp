@@ -5,37 +5,22 @@
  *      Author: boubad
  */
 ///////////////////////////////////////
-#include <boost/algorithm/string.hpp>
-////////////////////////////////////////
 #include "value.h"
-#include "variable.h"
-#include "indiv.h"
 //////////////////////////////////////////
 namespace intra {
 ///////////////////////////////////
 Value::Value() :
-		m_variableid(0), m_individ(0), m_pvar(nullptr), m_pind(nullptr) {
-}
-Value::Value(Variable *pVar, Indiv *pInd) :
-		m_variableid(pVar->id()), m_individ(pInd->id()), m_pvar(pVar), m_pind(
-				pInd) {
-}
-Value::Value(Variable &oVar, Indiv &oInd) :
-		m_variableid(oVar.id()), m_individ(oInd.id()), m_pvar(&oVar), m_pind(
-				&oInd) {
+		m_variableid(0), m_individ(0){
 }
 Value::Value(const Value &other) :
 		BaseItem(other), m_variableid(other.m_variableid), m_individ(
-				other.m_individ), m_pvar(other.m_pvar), m_pind(other.m_pind), m_val(
-				other.m_val) {
+				other.m_individ), m_val(other.m_val) {
 }
 Value & Value::operator=(const Value &other) {
 	if (this != &other) {
 		BaseItem::operator=(other);
 		this->m_variableid = other.m_variableid;
 		this->m_individ = other.m_individ;
-		this->m_pvar = other.m_pvar;
-		this->m_pind = other.m_pind;
 		this->m_val = other.m_val;
 	}
 	return (*this);
@@ -62,22 +47,6 @@ bool Value::operator<(const Value &other) const {
 }
 bool Value::is_writeable(void) const {
 	return ((this->m_variableid != 0) && (this->m_individ != 0));
-}
-void Value::indiv(Indiv *p) {
-	this->m_pind = p;
-	if (p != nullptr) {
-		this->m_individ = p->id();
-	} else {
-		this->m_individ = 0;
-	}
-}
-void Value::variable(Variable *p) {
-	this->m_pvar = p;
-	if (p != nullptr) {
-		this->m_variableid = p->id();
-	} else {
-		this->m_variableid = 0;
-	}
 }
 void Value::value(const boost::any &s) {
 	this->m_val = s;
