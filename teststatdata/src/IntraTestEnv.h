@@ -16,9 +16,8 @@
 typedef std::wstring String;
 #else
 typedef std::string String;
-#endif // INTRA_USE_WSTRING
-///////////////////////////////////
-template <class TSTRING = std::string>
+#endif // INTRA_USE_WSTRING///////////////////////////////////
+template<class TSTRING = std::string>
 class IntraTestEnv: public ::testing::Environment {
 public:
 	typedef TSTRING StringType;
@@ -39,23 +38,30 @@ public:
 		ASSERT_TRUE(bRet);
 		//
 #ifdef INTRA_USE_WSTRING
+		std::string sk(filename.length(),' ');
+		std::copy(filename.begin(),filename.end(),sk.begin());
+		std::wifstream inFile(sk.c_str());
+		bRet = inFile.is_open();
+		ASSERT_TRUE(bRet);
+		std::wstring na(L"na");
+		wchar_t delim(L'\t');
+		bRet = oMan.process_data(inFile, datasetSigle,delim,na);
 #else
 		std::ifstream inFile(filename.c_str());
 		bRet = inFile.is_open();
 		ASSERT_TRUE(bRet);
 		std::string na("na");
 		char delim('\t');
-		bRet = oMan.process_data(inFile, datasetSigle,delim,na);
-#endif // INTRA_USE_WSTRING
-		ASSERT_EQ(true, bRet);
+		bRet = oMan.process_data(inFile, datasetSigle, delim, na);
+#endif // INTRA_USE_WSTRING		ASSERT_EQ(true, bRet);
 	}
 	virtual void TearDown() {
 	}
 public:
-	static void get_database_name(StringType &s)  {
+	static void get_database_name(StringType &s) {
 		s = DATABASE_FILENAME;
 	}
-	static void get_dataset_sigle(StringType &s)  {
+	static void get_dataset_sigle(StringType &s) {
 		s = TEST_DATASET_SIGLE;
 	}
 private:
@@ -68,37 +74,39 @@ public:
 //////////////////////////////
 #ifndef INTRA_USE_WSTRING
 #ifdef __GNUC__
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = "./testdata/data_2013.txt";
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::DATABASE_FILENAME = ":memory";
+template<class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME =
+		"./testdata/data_2013.txt";
+template<class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME =
+		":memory";
 //const char *IntraTestEnv::DATABASE_FILENAME = "./testdata/testdb.db";
 #else
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = "..\\teststatdata\\testdata\\testdb.db";
 #endif
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::TEST_DATASET_SIGLE = "TESTSET";
+template<class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_DATASET_SIGLE =
+		"TESTSET";
 #else
 ////////////////////////////////////////////////////
 #ifdef __GNUC__
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::TEST_FILENAME = L"./testdata/data_2013.txt";
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::DATABASE_FILENAME = L":memory";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = L"./testdata/data_2013.txt";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = L":memory";
 //const wchar_t *IntraTestEnv::DATABASE_FILENAME = L"./testdata/testdb.db";
 #else
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::TEST_FILENAME = L"..\\teststatdata\\testdata\\data_2013.txt";
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::DATABASE_FILENAME = L"..\\teststatdata\\testdata\\testdb.db";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = L"..\\teststatdata\\testdata\\data_2013.txt";
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = L"..\\teststatdata\\testdata\\testdb.db";
 #endif
-	template <class TSTRING>
-	const typename IntraTestEnv<TSTRING>::CharType  *IntraTestEnv<TSTRING>::TEST_DATASET_SIGLE = L"TESTSET";
-#endif // INTRA_USE_WSTRING////////////////////////////////
-	template<class TSTRING>
-	IntraTestEnv<TSTRING> *IntraTestEnv<TSTRING>::global_intraenv = nullptr;
+template <class TSTRING>
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_DATASET_SIGLE = L"TESTSET";
+#endif // INTRA_USE_WSTRING////////////////////////////////template<class TSTRING>
+IntraTestEnv<TSTRING> *IntraTestEnv<TSTRING>::global_intraenv = nullptr;
 /////////////////////////////#endif /* INTRATESTENV_H_ */
 #endif

@@ -419,7 +419,7 @@ public:
 		if ((!stmt.is_valid()) || (!stmtVarType.is_valid())) {
 			return (false);
 		}
-		StringType sStatus = boost::to_upper_copy(boost::trim_copy(status));
+		StringType sStatus = to_upper(trim(status));
 		stmt.set_parameter(1, nDatasetId);
 		stmt.set_parameter(2, sStatus);
 		stmt.set_parameter(3, taken);
@@ -559,7 +559,7 @@ public:
 				}
 			} // nId
 			if ((nId == 0) && (nDatasetId != 0)) {
-				StringType ss = boost::to_upper_copy(boost::trim_copy(sigle));
+				StringType ss = to_upper(trim(sigle));
 				stmtFetch2.reset();
 				stmtFetch2.set_parameter(1, nDatasetId);
 				stmtFetch2.set_parameter(2, ss);
@@ -615,7 +615,7 @@ public:
 		if (!stmt.is_valid()) {
 			return (false);
 		}
-		StringType sStatus = boost::to_upper_copy(boost::trim_copy(status));
+		StringType sStatus = to_upper(trim(status));
 		stmt.set_parameter(1, nDatasetId);
 		stmt.set_parameter(2, sStatus);
 		stmt.set_parameter(3, taken);
@@ -862,7 +862,7 @@ public:
 				}
 			} // nId
 			if ((nId == 0) && (nDatasetId != 0)) {
-				StringType ss = boost::to_upper_copy(boost::trim_copy(sigle));
+				StringType ss = to_upper(trim(sigle));
 				stmtFetch2.reset();
 				stmtFetch2.set_parameter(1, nDatasetId);
 				stmtFetch2.set_parameter(2, ss);
@@ -1376,20 +1376,18 @@ bool StatDataManager<TSTRING>::fill_data(
 template<class TSTRING>
 void StatDataManager<TSTRING>::get_indiv_sigle_name(
 		StatDataManager<TSTRING>::StringType &s) const {
-#ifndef INTRA_USE_WSTRING
-	s = "NOM";
-#else
-	s = L"NOM";
-#endif
+	std::string sx("NOM");
+	StringType sz(sx.length(),' ');
+	std::copy(sx.begin(),sx.end(),sz.begin());
+	s = sz;
 }
 template<class TSTRING>
 void StatDataManager<TSTRING>::get_indiv_status_name(
 		StatDataManager<TSTRING>::StringType &s) const {
-#ifndef INTRA_USE_WSTRING
-	s = "STATUS";
-#else
-	s = L"STATUS";
-#endif
+	std::string sx("STATUS");
+	StringType sz(sx.length(),' ');
+	std::copy(sx.begin(),sx.end(),sz.begin());
+	s = sz;
 }
 /////////////////////////////////////////
 template<class TSTRING>
@@ -1609,7 +1607,7 @@ bool StatDataManager<TSTRING>::get_dataset_by_sigle(
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	StringType sx = boost::to_upper_copy(boost::trim_copy(xSigle));
+	StringType sx = to_upper(trim(xSigle));
 	if (!stmt.set_parameter(1, sx.c_str())) {
 		return (false);
 	}
@@ -1737,7 +1735,7 @@ bool StatDataManager<TSTRING>::get_variable_by_dataset_and_sigle(int nDatasetId,
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	StringType sx = boost::to_upper_copy(boost::trim_copy(xSigle));
+	StringType sx = to_upper(trim(xSigle));
 	stmt.set_parameter(1, nDatasetId);
 	stmt.set_parameter(2, sx);
 	if (!stmt.exec()) {
@@ -1834,7 +1832,7 @@ bool StatDataManager<TSTRING>::check_variable(int nDatasetId,
 		if (!stmt.is_valid()) {
 			return (false);
 		}
-		StringType sx = boost::to_upper_copy(boost::trim_copy(sigle));
+		StringType sx = to_upper(trim(sigle));
 		stmt.set_parameter(1, nDatasetId);
 		stmt.set_parameter(2, sx);
 		if (!stmt.exec()) {
@@ -1852,9 +1850,9 @@ bool StatDataManager<TSTRING>::check_variable(int nDatasetId,
 		return (false);
 	}
 	int nz = (bCateg) ? 1 : 0;
-	StringType sSigle = boost::trim_copy(sigle);
-	StringType sType = boost::trim_copy(type);
-	StringType sGenre = boost::trim_copy(genre);
+	StringType sSigle = trim(sigle);
+	StringType sType = trim(type);
+	StringType sGenre = trim(genre);
 	stmtInsert.reset();
 	stmtInsert.set_parameter(1, nDatasetId);
 	stmtInsert.set_parameter(2, sSigle);
@@ -1883,7 +1881,7 @@ bool StatDataManager<TSTRING>::get_dataset_indivs_by_status_count(int nId,
 	if (!stmt.is_valid()) {
 		return false;
 	}
-	StringType sStatus = boost::to_upper_copy(boost::trim_copy(status));
+	StringType sStatus = to_upper(trim(status));
 	stmt.set_parameter(1, nId);
 	stmt.set_parameter(2, sStatus);
 	if (!stmt.exec()) {
@@ -1908,7 +1906,7 @@ bool StatDataManager<TSTRING>::get_indiv_by_dataset_sigle(int nDatasetId,
 	if (!stmt.is_valid()) {
 		return (false);
 	}
-	StringType sigle = boost::to_upper_copy(boost::trim_copy(xSigle));
+	StringType sigle = to_upper(trim(xSigle));
 	stmt.set_parameter(1, nDatasetId);
 	stmt.set_parameter(2, sigle);
 	if (!stmt.exec()) {
@@ -1986,7 +1984,7 @@ bool StatDataManager<TSTRING>::get_dataset_by_status_values_count(int nId,
 	if (!stmt.is_valid()) {
 		return false;
 	}
-	StringType sStatus = boost::to_upper_copy(boost::trim_copy(status));
+	StringType sStatus = to_upper(trim(status));
 	stmt.set_parameter(1, nId);
 	stmt.set_parameter(2, sStatus);
 	if (!stmt.exec()) {
@@ -2277,12 +2275,14 @@ template<class TSTRING>
 void StatDataManager<TSTRING>::convert_value(
 		const StatDataManager<TSTRING>::ValueType &s,
 		const StatDataManager<TSTRING>::StringType &vartype, boost::any &v) {
-	std::string sx = boost::to_lower_copy(boost::trim_copy(vartype));
+	StringType sz = to_lower(trim(vartype));
+	std::string sx(sz.length(),' ');
+	std::copy(sz.begin(),sz.end(),sx.begin());
 	if (sx == "bool") {
 		v = boost::any(s.bool_value());
 	} else if (sx == "short") {
 		v = boost::any(s.short_value());
-	} else if (sx == "integer") {
+	} else if (sx == "int") {
 		v = boost::any(s.int_value());
 	} else if (sx == "float") {
 		v = boost::any(s.float_value());

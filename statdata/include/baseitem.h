@@ -15,8 +15,6 @@
 #include <fstream>
 ///////////////////////////////////////
 #include <boost/algorithm/string.hpp>
-////////////////////////////////////////
-namespace intra {
 ///////////////////////////////////////////
 template<class TSTRING>
 inline TSTRING trim(const TSTRING &s) {
@@ -26,7 +24,13 @@ template<class TSTRING>
 inline TSTRING to_upper(const TSTRING &s) {
 	return (boost::to_upper_copy(s));
 }
-///////////////////////////////////////
+template<class TSTRING>
+inline TSTRING to_lower(const TSTRING &s) {
+	return (boost::to_lower_copy(s));
+}
+////////////////////////////////////////
+namespace intra {
+///////////////////////////////////////////
 class BaseItem {
 protected:
 	BaseItem() :
