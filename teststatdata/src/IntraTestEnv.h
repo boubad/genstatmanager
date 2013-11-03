@@ -52,10 +52,10 @@ public:
 	virtual void TearDown() {
 	}
 public:
-	void get_database_name(StringType &s) const {
+	static void get_database_name(StringType &s)  {
 		s = DATABASE_FILENAME;
 	}
-	void get_dataset_sigle(StringType &s) const {
+	static void get_dataset_sigle(StringType &s)  {
 		s = TEST_DATASET_SIGLE;
 	}
 private:

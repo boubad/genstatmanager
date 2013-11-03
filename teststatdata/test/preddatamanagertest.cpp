@@ -21,9 +21,7 @@ namespace {
 			PredStatDataManagerType *pMan = m_man.get();
 			ASSERT_TRUE(pMan != nullptr);
 			String databasename;
-			IntraTestEnv<String> *pEnv = IntraTestEnv<String>::global_intraenv ;
-			ASSERT_TRUE(pEnv != nullptr);
-			pEnv->get_database_name(databasename);
+			IntraTestEnv<String>::get_database_name(databasename);
 			ASSERT_FALSE(databasename.empty());
 #ifdef INTRA_USE_WSTRING
 #else
@@ -31,7 +29,7 @@ namespace {
 #endif // INTRA_USE_WSTRING
 			ASSERT_TRUE(bRet);
 			ASSERT_TRUE(pMan->is_valid());
-			pEnv->get_dataset_sigle(m_sigle);
+			IntraTestEnv<String>::get_dataset_sigle(m_sigle);
 			ASSERT_FALSE(m_sigle.empty());
 		} // SetUpTestCase
 		static void TearSownTestCase() {
