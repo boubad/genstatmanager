@@ -25,10 +25,7 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.1776045147" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.362219023" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/preddataset/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/intrasqlite/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/statdata/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/dbsqlite/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gtest/include}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1819661371" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11" valueType="string"/>
@@ -42,18 +39,12 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.297533308" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.744977857" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option id="gnu.cpp.link.option.libs.2013604034" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="preddataset"/>
-									<listOptionValue builtIn="false" value="intrasqlite"/>
 									<listOptionValue builtIn="false" value="statdata"/>
-									<listOptionValue builtIn="false" value="dbsqlite"/>
 									<listOptionValue builtIn="false" value="gtest"/>
 									<listOptionValue builtIn="false" value="dl"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.983241343" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/preddataset/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/intrasqlite/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/dbsqlite/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/statdata/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gtest/Debug}&quot;"/>
 								</option>
@@ -99,10 +90,7 @@
 								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1097520540" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1499549407" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/preddataset/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/intrasqlite/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/statdata/include}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/dbsqlite/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gtest/include}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.722925838" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-c -fmessage-length=0 -std=c++11" valueType="string"/>
@@ -116,18 +104,12 @@
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1663394862" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1247652529" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release">
 								<option id="gnu.cpp.link.option.libs.1302394782" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="preddataset"/>
-									<listOptionValue builtIn="false" value="intrasqlite"/>
 									<listOptionValue builtIn="false" value="statdata"/>
-									<listOptionValue builtIn="false" value="dbsqlite"/>
 									<listOptionValue builtIn="false" value="gtest"/>
 									<listOptionValue builtIn="false" value="dl"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.689080601" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/preddataset/Release}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/intrasqlite/Release}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/dbsqlite/Release}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/statdata/Release}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/gtest/Release}&quot;"/>
 								</option>

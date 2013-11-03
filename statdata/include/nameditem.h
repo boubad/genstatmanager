@@ -81,7 +81,7 @@ public:
 		}
 	} // name
 	void description(const String &s) {
-		String ss = trim_copy(s);
+		String ss = trim(s);
 		if (ss.length() > 255) {
 			ss = trim(ss.substr(0, 255));
 		}

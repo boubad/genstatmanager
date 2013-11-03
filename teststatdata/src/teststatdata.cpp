@@ -10,7 +10,7 @@
 #include "IntraTestEnv.h"
 //////////////////////////////////
 int main(int argc, char *argv[]) {
-	global_intraenv = reinterpret_cast<IntraTestEnv *>(::testing::AddGlobalTestEnvironment(new IntraTestEnv()));
+	IntraTestEnv<String>::global_intraenv = reinterpret_cast<IntraTestEnv<String> *>(::testing::AddGlobalTestEnvironment(new IntraTestEnv<String>()));
 	::testing::InitGoogleTest(&argc, argv);
 	int nRet = RUN_ALL_TESTS();
 #if (defined(_MSC_VER) && defined(_DEBUG))

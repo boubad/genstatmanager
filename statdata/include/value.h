@@ -7,14 +7,22 @@
 
 #ifndef VALUE_H_
 #define VALUE_H_
+///////////////////////////
+#include <cassert>
+#include <map>
+#include <vector>
+#include <memory>
+#include <algorithm>
+//////////////////////////////////
+#include <boost/any.hpp>
 /////////////////////////////////
 #include "baseitem.h"
-//////////////////////////////////////////
-#include <boost/any.hpp>
 /////////////////////////////////////////
 namespace intra {
 /////////////////////////////////////
 class Value: public BaseItem {
+public:
+	typedef std::shared_ptr<Value> PValue;
 private:
 	int m_variableid;
 	int m_individ;

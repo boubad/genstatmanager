@@ -6,23 +6,29 @@
 namespace {
 	/////////////////////////////
 	class PredStatDataManagerTest : public ::testing::Test {
+	public:
+		typedef intra::Dataset<String> DatasetType;
+		typedef intrasqlite::PredStatDataManager<String> PredStatDataManagerType;
 	protected:
-		static std::unique_ptr<PredStatDataManager> m_man;
-		static StringType m_sigle;
+		static std::unique_ptr<PredStatDataManagerType> m_man;
+		static String m_sigle;
 		//
-		PredStatDataManager *m_pman;
-		std::unique_ptr<Dataset> m_set;
+		PredStatDataManagerType *m_pman;
+		std::unique_ptr<DatasetType> m_set;
 	protected:
 		static void SetUpTestCase() {
-			m_man.reset(new PredStatDataManager());
-			PredStatDataManager *pMan = m_man.get();
+			m_man.reset(new PredStatDataManagerType());
+			PredStatDataManagerType *pMan = m_man.get();
 			ASSERT_TRUE(pMan != nullptr);
-			StringType databasename;
-			IntraTestEnv *pEnv = global_intraenv;
+			String databasename;
+			IntraTestEnv<String> *pEnv = IntraTestEnv<String>::global_intraenv ;
 			ASSERT_TRUE(pEnv != nullptr);
 			pEnv->get_database_name(databasename);
 			ASSERT_FALSE(databasename.empty());
+#ifdef INTRA_USE_WSTRING
+#else
 			bool bRet = pMan->open(databasename);
+#endif // INTRA_USE_WSTRING
 			ASSERT_TRUE(bRet);
 			ASSERT_TRUE(pMan->is_valid());
 			pEnv->get_dataset_sigle(m_sigle);
@@ -38,8 +44,8 @@ namespace {
 			m_pman = m_man.get();
 			ASSERT_TRUE(m_pman != nullptr);
 			ASSERT_TRUE(m_pman->is_valid());
-			m_set.reset(new Dataset());
-			Dataset *pSet = m_set.get();
+			m_set.reset(new DatasetType());
+			DatasetType *pSet = m_set.get();
 			EXPECT_TRUE(pSet != nullptr);
 			bool bRet = m_pman->get_dataset_by_sigle(m_sigle, *pSet);
 			EXPECT_TRUE(bRet);
@@ -52,20 +58,21 @@ namespace {
 		}
 	};
 	///////////////////////////////////////
-	std::unique_ptr<PredStatDataManager> PredStatDataManagerTest::m_man;
-	StringType PredStatDataManagerTest::m_sigle;
+	std::unique_ptr<PredStatDataManagerTest::PredStatDataManagerType> PredStatDataManagerTest::m_man;
+	String PredStatDataManagerTest::m_sigle;
 	///////////////////////////////////
 	TEST_F(PredStatDataManagerTest, datasets)
 	{
-		PredStatDataManager *pMan = m_pman;
-		std::vector<Dataset> oVec;
+		PredStatDataManagerType *pMan = m_pman;
+		std::vector<DatasetType> oVec;
 		bool bRet = pMan->get_all_datasets(oVec);
 		EXPECT_TRUE(bRet);
 		size_t n = oVec.size();
 		bRet = (n > 0);
 		EXPECT_TRUE(bRet);
-		const Dataset &oSet = *(oVec.begin());
-
+		const DatasetType &oSet = *(oVec.begin());
+		int nId = oSet.id();
+		ASSERT_TRUE(nId != 0);
 	}// datasets
 	/////////////////
 }// namespace

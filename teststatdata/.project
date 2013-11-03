@@ -3,9 +3,7 @@
 	<name>teststatdata</name>
 	<comment></comment>
 	<projects>
-		<project>dbsqlite</project>
 		<project>gtest</project>
-		<project>intrasqlite</project>
 		<project>statdata</project>
 	</projects>
 	<buildSpec>
