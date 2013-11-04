@@ -52,6 +52,9 @@
 #define GTEST_INCLUDE_GTEST_GTEST_H_
 /////////////////////////////////////////
 #ifdef _MSC_VER
+#ifdef _VARIADIC_MAX
+#undef _VARIADIC_MAX
+#endif
 #define _VARIADIC_MAX 10
 #endif // _MSC_VER
 //////////////////////////////////////////

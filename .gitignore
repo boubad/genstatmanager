@@ -2,7 +2,17 @@
 *.slo
 *.lo
 *.o
-
+*.obj
+*.lib
+*.exe
+*.sdf
+*.tlog
+*.log
+*.pch
+*.suo
+Debug/
+Release/
+x64/
 # Compiled Dynamic libraries
 *.so
 *.dylib

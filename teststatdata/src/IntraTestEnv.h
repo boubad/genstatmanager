@@ -16,7 +16,8 @@
 typedef std::wstring String;
 #else
 typedef std::string String;
-#endif // INTRA_USE_WSTRING///////////////////////////////////
+#endif // INTRA_USE_WSTRING
+///////////////////////////////////
 template<class TSTRING = std::string>
 class IntraTestEnv: public ::testing::Environment {
 public:
@@ -53,7 +54,8 @@ public:
 		std::string na("na");
 		char delim('\t');
 		bRet = oMan.process_data(inFile, datasetSigle, delim, na);
-#endif // INTRA_USE_WSTRING		ASSERT_EQ(true, bRet);
+#endif // INTRA_USE_WSTRING
+		ASSERT_EQ(true, bRet);
 	}
 	virtual void TearDown() {
 	}
@@ -102,7 +104,9 @@ const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_
 #endif
 template <class TSTRING>
 const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_DATASET_SIGLE = L"TESTSET";
-#endif // INTRA_USE_WSTRING////////////////////////////////template<class TSTRING>
+#endif // INTRA_USE_WSTRING
+////////////////////////////////
+template<class TSTRING>
 IntraTestEnv<TSTRING> *IntraTestEnv<TSTRING>::global_intraenv = nullptr;
 /////////////////////////////#endif /* INTRATESTENV_H_ */
 #endif
