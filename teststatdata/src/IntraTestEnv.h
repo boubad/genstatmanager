@@ -75,12 +75,9 @@ public:
 #ifndef INTRA_USE_WSTRING
 #ifdef __GNUC__
 template<class TSTRING>
-const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME =
-		"./testdata/data_2013.txt";
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = "./testdata/data_2013.txt";
 template<class TSTRING>
-const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME =
-		":memory";
-//const char *IntraTestEnv::DATABASE_FILENAME = "./testdata/testdb.db";
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = "./testdata/testdb.db";
 #else
 template <class TSTRING>
 const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = "..\\teststatdata\\testdata\\data_2013.txt";
@@ -96,8 +93,7 @@ const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_DATA
 template <class TSTRING>
 const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = L"./testdata/data_2013.txt";
 template <class TSTRING>
-const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = L":memory";
-//const wchar_t *IntraTestEnv::DATABASE_FILENAME = L"./testdata/testdb.db";
+const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::DATABASE_FILENAME = "./testdata/testdb.db";
 #else
 template <class TSTRING>
 const typename IntraTestEnv<TSTRING>::CharType *IntraTestEnv<TSTRING>::TEST_FILENAME = L"..\\teststatdata\\testdata\\data_2013.txt";

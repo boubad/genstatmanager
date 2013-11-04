@@ -61,7 +61,7 @@ public:
 	bool operator<(const Dataset &other) const {
 		return (NamedItemType::operator<(other));
 	}
-protected:
+public:
 	inline const VariableVector & variables(void) const {
 		return (this->m_vars);
 	}
