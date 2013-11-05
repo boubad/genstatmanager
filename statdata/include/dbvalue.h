@@ -59,6 +59,9 @@ private:
 public:
 	DbValue() {
 	}
+	explicit DbValue(const boost::any &v):m_val(v){
+
+	}
 	explicit DbValue(bool bval) :
 			m_val(bval) {
 
