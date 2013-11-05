@@ -46,7 +46,7 @@ inline bool are_equals(T t1, T t2, T epsilon = (T) 0) {
 	return (delta <= epsilon);
 } // are_equals
 ////////////////////////////////////
-template<typename T = double, class ALLOCT = std::allocator<T> >
+template<typename T = float, class ALLOCT = std::allocator<T> >
 class IntraVector {
 public:
 	typedef T DataType;
