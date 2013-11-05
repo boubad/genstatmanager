@@ -692,7 +692,7 @@ namespace intrasqlite {
 			return (true);
 		} // maintains_indivs
 		template<class ALLOCVEC>
-		bool get_dataset_by_status_indivs(int nDatasetId,
+		bool get_dataset_indivs_by_status(int nDatasetId,
 			std::vector<IndivType, ALLOCVEC> &oVec, const StringType &status,
 			int skip, int taken) {
 				oVec.clear();

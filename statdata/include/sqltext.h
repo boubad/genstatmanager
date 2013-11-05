@@ -135,7 +135,7 @@ const char *StatDataManager<TSTRING>::SQL_FIND_INDIVS_BY_DATASET_AND_STATUS =
 		"SELECT individ,optlock,datasetid,sigle,nom,description,status"
 				" FROM dbindiv WHERE datasetid = ?1 AND UPPER(LTRIM(RTRIM(status))) = ?2"
 				" ORDER BY sigle ASC"
-				" LIMIT ?3 OFFET ?4";
+				" LIMIT ?3 OFFSET ?4";
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_GET_DATASET_INDIV_IDS =
 		"SELECT individ FROM dbindiv"
