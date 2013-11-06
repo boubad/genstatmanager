@@ -66,20 +66,98 @@ namespace intrasqlite {
 		typedef typename ValueType::PValue PValue;
 		typedef typename VariableType::PVariable PVariable;
 		typedef typename IndivType::PIndiv PIndiv;
+		//
+		typedef sqlite::Database Database;
+		typedef sqlite::PStatement PStatement;
+		typedef sqlite::DbValue DbValue;
 	private:
 		// no implementation
 		StatDataManager(const StatDataManager<TSTRING> &other);
 		StatDataManager<TSTRING> & operator=(const StatDataManager<TSTRING> &other);
 	private:
 		bool m_intransaction;
-		std::unique_ptr<sqlite::Database> m_database;
-		std::unique_ptr<sqlite::Statement> m_pstatementFetch;
-		std::unique_ptr<sqlite::Statement> m_pstatementVar;
-		std::map<int, std::string> m_vartypes;
+		std::unique_ptr<Database> m_database;
+		std::map<int, StringType> m_vartypes;
 	protected:
 		virtual void init_tables(std::vector<TableDef> &oVec) const;
 		virtual void get_indiv_sigle_name(StringType &s) const;
 		virtual void get_indiv_status_name(StringType &s) const;
+	protected:
+		PStatement find_statement(const char *pszSQL){
+			assert(this->is_valid());
+			Database *pBase = this->m_database.get();
+			assert(pBase != nullptr);
+			PStatement pRet = pBase->find_statement(pszSQL);
+			assert(pRet != nullptr);
+			return pRet;
+		}// find_statement
+		bool read_value(PStatement pStmtFetch, ValueType &cur){
+			std::map<int, StringType> &oMap = this->m_vartypes;
+			StringType vartype;
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(2, v)) {
+					int nx = v.int_value();
+					cur.variable_id(nx);
+					if (oMap.find(nx) != oMap.end()) {
+						vartype = oMap[nx];
+					} else {
+						PStatement pStmtVar = this->find_statement(SQL_FIND_VARIABLE_TYPE);
+						pStmtVar->reset();
+						pStmtVar->set_parameter(1, nx);
+						if (!pStmtVar->exec()) {
+							return (false);
+						}
+						if (!pStmtVar->has_values()) {
+							return (false);
+						}
+						DbValue vv;
+						pStmtVar->col_value(0, vv);
+						vv.string_value(vartype);
+						if (vartype.empty()){
+							return (false);
+						}
+						oMap[nx] = vartype;
+					}
+				}
+			}
+			if (vartype.empty()){
+				return (false);
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(3, v)) {
+					int nx = v.int_value();
+					cur.indiv_id(nx);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(4, v)) {
+					boost::any vx = v.value();
+					ValueType x;
+					x.value(vx);
+					boost::any vy;
+					this->convert_value(x, vartype, vy);
+					cur.value(vy);
+				}
+			}
+			return (true);
+		}// readValue
 		bool begin_transaction(void);
 		bool commit_transaction(void);
 		bool rollback_transaction(void);
@@ -90,10 +168,7 @@ namespace intrasqlite {
 		StatDataManager();
 		virtual ~StatDataManager();
 	public:
-		inline void reset(void) {
-			this->m_vartypes.clear();
-			this->m_pstatementVar.reset();
-			this->m_pstatementFetch.reset();
+		void reset(void) {
 		} // reset
 		template<class IFSTREAM>
 		bool process_data(IFSTREAM &inFile, const StringType &datasetSigle,
@@ -135,9 +210,8 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_REMOVE_VALUE);
-			if (!stmt.is_valid()) {
+			PStatement pStmt = this->find_statement(SQL_REMOVE_VALUE);
+			if (!pStmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -145,9 +219,9 @@ namespace intrasqlite {
 				const ValueType &cur = *it;
 				int nId = cur.id();
 				if (nId != 0) {
-					stmt.reset();
-					stmt.set_parameter(1, nId);
-					if (!stmt.exec()) {
+					pStmt->reset();
+					pStmt->set_parameter(1, nId);
+					if (!pStmt->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -165,14 +239,13 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmtFetch(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_VALUE);
-			sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_VALUE);
-			sqlite::Statement stmtFirst(pBase, SQL_VALUE_BY_ID);
-			if ((!stmtFetch.is_valid())
-				|| (!stmtUpdate.is_valid() || (!stmtFirst.is_valid()))
-				|| (!stmtInsert.is_valid())) {
+			PStatement stmtFetch = find_statement(SQL_VALUES_BY_VARIABLE_INDIV);
+			PStatement stmtInsert = find_statement(SQL_INSERT_VALUE);
+			PStatement stmtUpdate = find_statement(SQL_UPDATE_VALUE);
+			PStatement stmtFirst = find_statement(SQL_VALUE_BY_ID);
+			if ((!stmtFetch->is_valid())
+				|| (!stmtUpdate->is_valid() || (!stmtFirst->is_valid()))
+				|| (!stmtInsert->is_valid())) {
 					this->rollback_transaction();
 					return (false);
 			}
@@ -183,21 +256,21 @@ namespace intrasqlite {
 				std::string sval;
 				cur.string_value(sval);
 				if (nId != 0) {
-					stmtFirst.reset();
-					stmtFirst.set_parameter(1, nId);
-					if (!stmtFirst.exec()) {
+					stmtFirst->reset();
+					stmtFirst->set_parameter(1, nId);
+					if (!stmtFirst->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-					if (stmtFirst.has_values()) {
-						stmtUpdate.reset();
+					if (stmtFirst->has_values()) {
+						stmtUpdate->reset();
 						if (bNull) {
-							stmtUpdate.set_parameter_null(1);
+							stmtUpdate->set_parameter_null(1);
 						} else {
-							stmtUpdate.set_parameter(1, sval);
+							stmtUpdate->set_parameter(1, sval);
 						}
-						stmtUpdate.set_parameter(2, nId);
-						if (!stmtUpdate.exec()) {
+						stmtUpdate->set_parameter(2, nId);
+						if (!stmtUpdate->exec()) {
 							this->rollback_transaction();
 							return (false);
 						}
@@ -209,42 +282,42 @@ namespace intrasqlite {
 				if ((nVarId == 0) || (nIndivId == 0)) {
 					continue;
 				}
-				stmtFetch.reset();
-				stmtFetch.set_parameter(1, nVarId);
-				stmtFetch.set_parameter(2, nIndivId);
-				if (!stmtFetch.exec()) {
+				stmtFetch->reset();
+				stmtFetch->set_parameter(1, nVarId);
+				stmtFetch->set_parameter(2, nIndivId);
+				if (!stmtFetch->exec()) {
 					return (false);
 				}
-				if (stmtFetch.has_values()) {
+				if (stmtFetch->has_values()) {
 					nId = 0;
 					sqlite::DbValue v;
-					if (stmtFetch.col_value(0, v)) {
+					if (stmtFetch->col_value(0, v)) {
 						nId = v.int_value();
 					}
 					if (nId != 0) {
-						stmtUpdate.reset();
+						stmtUpdate->reset();
 						if (bNull) {
-							stmtUpdate.set_parameter_null(1);
+							stmtUpdate->set_parameter_null(1);
 						} else {
-							stmtUpdate.set_parameter(1, sval);
+							stmtUpdate->set_parameter(1, sval);
 						}
-						stmtUpdate.set_parameter(2, nId);
-						if (!stmtUpdate.exec()) {
+						stmtUpdate->set_parameter(2, nId);
+						if (!stmtUpdate->exec()) {
 							this->rollback_transaction();
 							return (false);
 						}
 					} // nId
 					continue;
 				} else {
-					stmtInsert.reset();
-					stmtInsert.set_parameter(1, nVarId);
-					stmtInsert.set_parameter(2, nIndivId);
+					stmtInsert->reset();
+					stmtInsert->set_parameter(1, nVarId);
+					stmtInsert->set_parameter(2, nIndivId);
 					if (bNull) {
-						stmtInsert.set_parameter_null(3);
+						stmtInsert->set_parameter_null(3);
 					} else {
-						stmtInsert.set_parameter(3, sval);
+						stmtInsert->set_parameter(3, sval);
 					}
-					if (!stmtInsert.exec()) {
+					if (!stmtInsert->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -264,36 +337,8 @@ namespace intrasqlite {
 					return (false);
 				}
 				assert(this->is_valid());
-				sqlite::Statement *pStmtFetch = this->m_pstatementFetch.get();
-				StringType vartype;
-				if (pStmtFetch == nullptr) {
-					sqlite::Database *pBase = this->m_database.get();
-					sqlite::Statement stmtVarType(pBase, SQL_FIND_VARIABLE_TYPE);
-					if (!stmtVarType.is_valid()) {
-						return (false);
-					}
-					stmtVarType.set_parameter(1, nVarId);
-					if (!stmtVarType.exec()) {
-						return (false);
-					}
-					if (!stmtVarType.has_values()) {
-						return (false);
-					}
-					sqlite::DbValue vv;
-					stmtVarType.col_value(0, vv);
-					vv.string_value(vartype);
-					if (vartype.empty()) {
-						return (false);
-					}
-					this->m_pstatementFetch.reset(
-						new sqlite::Statement(pBase, SQL_VALUES_BY_VARIABLE_NOT_NULL));
-					pStmtFetch = this->m_pstatementFetch.get();
-					if (pStmtFetch == nullptr) {
-						return (false);
-					}
-				}
+				PStatement pStmtFetch = this->find_statement( SQL_VALUES_BY_VARIABLE_NOT_NULL);
 				if (!pStmtFetch->is_valid()) {
-					this->m_pstatementFetch.reset();
 					return (false);
 				}
 				pStmtFetch->reset();
@@ -301,54 +346,15 @@ namespace intrasqlite {
 				pStmtFetch->set_parameter(2, taken);
 				pStmtFetch->set_parameter(3, skip);
 				if (!pStmtFetch->exec()) {
-					this->m_pstatementFetch.reset();
 					return (false);
 				}
 				while (pStmtFetch->has_values()) {
 					ValueType cur;
-					std::string vartype;
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(2, v)) {
-							int nx = v.int_value();
-							cur.variable_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(3, v)) {
-							int nx = v.int_value();
-							cur.indiv_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(4, v)) {
-							boost::any vx = v.value();
-							intra::Value x;
-							x.value(vx);
-							boost::any vy;
-							this->convert_value(x, vartype, vy);
-							cur.value(vy);
-						}
+					if (!this->read_value(pStmtFetch,cur)){
+						return (false);
 					}
 					oVec.push_back(cur);
 					if (!pStmtFetch->next()) {
-						this->m_pstatementFetch.reset();
 						break;
 					}
 				} // values
@@ -362,106 +368,22 @@ namespace intrasqlite {
 					return (false);
 				}
 				assert(this->is_valid());
-				sqlite::Statement *pStmtFetch = this->m_pstatementFetch.get();
-				sqlite::Statement *pStmtVar = this->m_pstatementVar.get();
-				std::map<int, std::string> &oMap = this->m_vartypes;
-				if (pStmtFetch == nullptr) {
-					sqlite::Database *pBase = this->m_database.get();
-					this->m_pstatementFetch.reset(
-						new sqlite::Statement(pBase, SQL_FIND_DATASET_VALUES));
-					this->m_pstatementVar.reset(
-						new sqlite::Statement(pBase, SQL_FIND_VARIABLE_TYPE));
-					oMap.clear();
-					pStmtFetch = this->m_pstatementFetch.get();
-					pStmtVar = this->m_pstatementVar.get();
-					if ((pStmtFetch == nullptr) || (pStmtVar == nullptr)) {
-						this->m_pstatementFetch.reset();
-						this->m_pstatementVar.reset();
-						return (false);
-					}
-					if ((!pStmtFetch->is_valid()) || (!pStmtVar->is_valid())) {
-						this->m_pstatementFetch.reset();
-						this->m_pstatementVar.reset();
-						return (false);
-					}
-				} // pStmtFetch
+				PStatement pStmtFetch = this->find_statement(SQL_FIND_DATASET_VALUES);
+				//
 				pStmtFetch->reset();
 				pStmtFetch->set_parameter(1, nDatasetId);
 				pStmtFetch->set_parameter(2, taken);
 				pStmtFetch->set_parameter(3, skip);
 				if (!pStmtFetch->exec()) {
-					this->m_pstatementFetch.reset();
-					this->m_pstatementVar.reset();
 					return (false);
 				}
 				while (pStmtFetch->has_values()) {
 					ValueType cur;
-					std::string vartype;
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(2, v)) {
-							int nx = v.int_value();
-							cur.variable_id(nx);
-							if (oMap.find(nx) != oMap.end()) {
-								vartype = oMap[nx];
-							} else {
-								pStmtVar->reset();
-								pStmtVar->set_parameter(1, nx);
-								if (!pStmtVar->exec()) {
-									this->m_pstatementFetch.reset();
-									this->m_pstatementVar.reset();
-									return (false);
-								}
-								if (!pStmtVar->has_values()) {
-									this->m_pstatementFetch.reset();
-									this->m_pstatementVar.reset();
-									return (false);
-								}
-								sqlite::DbValue vv;
-								pStmtVar->col_value(0, vv);
-								vv.string_value(vartype);
-								if (!vartype.empty()) {
-									oMap[nx] = vartype;
-								}
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(3, v)) {
-							int nx = v.int_value();
-							cur.indiv_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(4, v)) {
-							boost::any vx = v.value();
-							intra::Value x;
-							x.value(vx);
-							boost::any vy;
-							this->convert_value(x, vartype, vy);
-							cur.value(vy);
-						}
+					if (!this->read_value(pStmtFetch, cur)){
+						return (false);
 					}
 					oVec.push_back(cur);
 					if (!pStmtFetch->next()) {
-						this->m_pstatementFetch.reset();
-						this->m_pstatementVar.reset();
 						break;
 					}
 				} // values
@@ -475,30 +397,7 @@ namespace intrasqlite {
 					return (false);
 				}
 				assert(this->is_valid());
-				sqlite::Statement *pStmtFetch = this->m_pstatementFetch.get();
-				sqlite::Statement *pStmtVar = this->m_pstatementVar.get();
-				std::map<int, std::string> &oMap = this->m_vartypes;
-				if (pStmtFetch == nullptr) {
-					sqlite::Database *pBase = this->m_database.get();
-					this->m_pstatementFetch.reset(
-						new sqlite::Statement(pBase,
-						SQL_FIND_DATASET_BY_STATUS_VALUES));
-					this->m_pstatementVar.reset(
-						new sqlite::Statement(pBase, SQL_FIND_VARIABLE_TYPE));
-					oMap.clear();
-					pStmtFetch = this->m_pstatementFetch.get();
-					pStmtVar = this->m_pstatementVar.get();
-					if ((pStmtFetch == nullptr) || (pStmtVar == nullptr)) {
-						this->m_pstatementFetch.reset();
-						this->m_pstatementVar.reset();
-						return (false);
-					}
-					if ((!pStmtFetch->is_valid()) || (!pStmtVar->is_valid())) {
-						this->m_pstatementFetch.reset();
-						this->m_pstatementVar.reset();
-						return (false);
-					}
-				} // pStmtFetch
+				PStatement pStmtFetch = this->find_statement(SQL_FIND_DATASET_BY_STATUS_VALUES);
 				StringType sStatus = to_upper(trim(status));
 				pStmtFetch->reset();
 				pStmtFetch->set_parameter(1, nDatasetId);
@@ -506,72 +405,12 @@ namespace intrasqlite {
 				pStmtFetch->set_parameter(3, taken);
 				pStmtFetch->set_parameter(4, skip);
 				if (!pStmtFetch->exec()) {
-					this->m_pstatementFetch.reset();
-					this->m_pstatementVar.reset();
 					return (false);
 				}
 				while (pStmtFetch->has_values()) {
 					ValueType cur;
-					std::string vartype;
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(2, v)) {
-							int nx = v.int_value();
-							cur.variable_id(nx);
-							if (oMap.find(nx) != oMap.end()) {
-								vartype = oMap[nx];
-							} else {
-								pStmtVar->reset();
-								pStmtVar->set_parameter(1, nx);
-								if (!pStmtVar->exec()) {
-									this->m_pstatementFetch.reset();
-									this->m_pstatementVar.reset();
-									return (false);
-								}
-								if (!pStmtVar->has_values()) {
-									this->m_pstatementFetch.reset();
-									this->m_pstatementVar.reset();
-									return (false);
-								}
-								sqlite::DbValue vv;
-								pStmtVar->col_value(0, vv);
-								vv.string_value(vartype);
-								if (!vartype.empty()) {
-									oMap[nx] = vartype;
-								}
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(3, v)) {
-							int nx = v.int_value();
-							cur.indiv_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(4, v)) {
-							boost::any vx = v.value();
-							intra::Value x(vx);
-							boost::any vy;
-							this->convert_value(x, vartype, vy);
-							cur.value(vy);
-						}
+					if (!this->read_value(pStmtFetch,cur)){
+						return (false);
 					}
 					oVec.push_back(cur);
 					if (!pStmtFetch->next()) {
@@ -586,9 +425,8 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_REMOVE_INDIV);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_REMOVE_INDIV);
+			if (!stmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -596,9 +434,9 @@ namespace intrasqlite {
 				const IndivType &cur = *it;
 				int nId = cur.id();
 				if (nId != 0) {
-					stmt.reset();
-					stmt.set_parameter(1, nId);
-					if (!stmt.exec()) {
+					stmt->reset();
+					stmt->set_parameter(1, nId);
+					if (!stmt->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -616,16 +454,15 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmtFetch1(pBase, SQL_FIND_INDIV_BY_ID);
-			sqlite::Statement stmtFetch2(pBase, SQL_INDIV_BY_DATASET_AND_SIGLE);
-			if ((!stmtFetch1.is_valid()) || (!stmtFetch2.is_valid())) {
+			PStatement stmtFetch1 = this->find_statement(SQL_FIND_INDIV_BY_ID);
+			PStatement stmtFetch2 = this->find_statement(SQL_INDIV_BY_DATASET_AND_SIGLE);
+			if ((!stmtFetch1->is_valid()) || (!stmtFetch2->is_valid())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_INDIV);
-			sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_INDIV);
-			if ((!stmtUpdate.is_valid()) || (!stmtInsert.is_valid())) {
+			PStatement stmtInsert = this->find_statement(SQL_INSERT_INDIV);
+			PStatement stmtUpdate = this->find_statement(SQL_UPDATE_INDIV);
+			if ((!stmtUpdate->is_valid()) || (!stmtInsert->is_valid())) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -635,51 +472,51 @@ namespace intrasqlite {
 				int nDatasetId = cur.dataset_id();
 				StringType sigle = cur.sigle();
 				if (nId != 0) {
-					stmtFetch1.reset();
-					stmtFetch1.set_parameter(1, nId);
-					if (!stmtFetch1.exec()) {
+					stmtFetch1->reset();
+					stmtFetch1->set_parameter(1, nId);
+					if (!stmtFetch1->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-					if (!stmtFetch1.has_values()) {
+					if (!stmtFetch1->has_values()) {
 						nId = 0;
 					}
 				} // nId
 				if ((nId == 0) && (nDatasetId != 0)) {
 					StringType ss = to_upper(trim(sigle));
-					stmtFetch2.reset();
-					stmtFetch2.set_parameter(1, nDatasetId);
-					stmtFetch2.set_parameter(2, ss);
-					if (!stmtFetch2.exec()) {
+					stmtFetch2->reset();
+					stmtFetch2->set_parameter(1, nDatasetId);
+					stmtFetch2->set_parameter(2, ss);
+					if (!stmtFetch2->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-					if (stmtFetch2.has_values()) {
-						sqlite::DbValue v;
-						if (stmtFetch2.col_value(0, v)) {
+					if (stmtFetch2->has_values()) {
+						DbValue v;
+						if (stmtFetch2->col_value(0, v)) {
 							nId = v.int_value();
 						}
 					}
 				}
 				if ((!sigle.empty()) && (nId != 0)) {
-					stmtUpdate.reset();
-					stmtUpdate.set_parameter(1, sigle);
-					stmtUpdate.set_parameter(2, cur.name());
-					stmtUpdate.set_parameter(3, cur.description());
-					stmtUpdate.set_parameter(4, cur.status());
-					stmtUpdate.set_parameter(5, nId);
-					if (!stmtUpdate.exec()) {
+					stmtUpdate->reset();
+					stmtUpdate->set_parameter(1, sigle);
+					stmtUpdate->set_parameter(2, cur.name());
+					stmtUpdate->set_parameter(3, cur.description());
+					stmtUpdate->set_parameter(4, cur.status());
+					stmtUpdate->set_parameter(5, nId);
+					if (!stmtUpdate->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-				} else if (cur.is_writeable() && (nDatasetId != 0)) {
-					stmtInsert.reset();
-					stmtInsert.set_parameter(1, nDatasetId);
-					stmtInsert.set_parameter(2, sigle);
-					stmtInsert.set_parameter(3, cur.name());
-					stmtInsert.set_parameter(4, cur.description());
-					stmtInsert.set_parameter(5, cur.status());
-					if (!stmtInsert.exec()) {
+				} else if ((!sigle.empty()) && (nDatasetId != 0)) {
+					stmtInsert->reset();
+					stmtInsert->set_parameter(1, nDatasetId);
+					stmtInsert->set_parameter(2, sigle);
+					stmtInsert->set_parameter(3, cur.name());
+					stmtInsert->set_parameter(4, cur.description());
+					stmtInsert->set_parameter(5, cur.status());
+					if (!stmtInsert->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -691,6 +528,65 @@ namespace intrasqlite {
 			}
 			return (true);
 		} // maintains_indivs
+		void read_indiv(PStatement pStmtFetch, IndivType &cur){
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (pStmtFetch->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(5, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(6, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.status(s);
+					}
+				}
+			}
+		}// read_indiv
 		template<class ALLOCVEC>
 		bool get_dataset_indivs_by_status(int nDatasetId,
 			std::vector<IndivType, ALLOCVEC> &oVec, const StringType &status,
@@ -700,22 +596,7 @@ namespace intrasqlite {
 					return (false);
 				}
 				assert(this->is_valid());
-				sqlite::Statement *pStmtFetch = this->m_pstatementFetch.get();
-				if (pStmtFetch == nullptr) {
-					sqlite::Database *pBase = this->m_database.get();
-					this->m_pstatementFetch.reset(
-						new sqlite::Statement(pBase,
-						SQL_FIND_INDIVS_BY_DATASET_AND_STATUS));
-					pStmtFetch = this->m_pstatementFetch.get();
-					if (pStmtFetch == nullptr) {
-						this->m_pstatementFetch.reset();
-						return (false);
-					}
-					if (!pStmtFetch->is_valid()) {
-						this->m_pstatementFetch.reset();
-						return (false);
-					}
-				} // pStmtFetch
+				PStatement pStmtFetch = this->find_statement(SQL_FIND_INDIVS_BY_DATASET_AND_STATUS);
 				StringType sStatus = to_upper(trim(status));
 				pStmtFetch->reset();
 				pStmtFetch->set_parameter(1, nDatasetId);
@@ -727,66 +608,9 @@ namespace intrasqlite {
 				}
 				while (pStmtFetch->has_values()) {
 					IndivType cur;
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(2, v)) {
-							int nx = v.int_value();
-							cur.dataset_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(3, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.sigle(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(4, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.name(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(5, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.description(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (pStmtFetch->col_value(6, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.status(s);
-							}
-						}
-					}
+					this->read_indiv(pStmtFetch,cur);
 					oVec.push_back(cur);
 					if (!pStmtFetch->next()) {
-						this->m_pstatementFetch.reset();
 						break;
 					}
 				} // values
@@ -797,76 +621,20 @@ namespace intrasqlite {
 			std::vector<IndivType, ALLOCVEC> &oVec) {
 				assert(this->is_valid());
 				oVec.clear();
-				sqlite::Database *pBase = this->m_database.get();
-				sqlite::Statement stmt(pBase, SQL_FIND_DATASET_INDIVS);
-				if (!stmt.is_valid()) {
+				PStatement stmt = this->find_statement(SQL_FIND_DATASET_INDIVS);
+				if (!stmt->is_valid()) {
 					return (false);
 				}
-				stmt.set_parameter(1, nDatasetId);
-				if (!stmt.exec()) {
+				stmt->reset();
+				stmt->set_parameter(1, nDatasetId);
+				if (!stmt->exec()) {
 					return (false);
 				}
-				while (stmt.has_values()) {
+				while (stmt->has_values()) {
 					IndivType cur;
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(2, v)) {
-							int nx = v.int_value();
-							cur.dataset_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(3, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.sigle(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(4, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.name(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(5, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.description(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(6, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.status(s);
-							}
-						}
-					}
+					this->read_indiv(stmt,cur);
 					oVec.push_back(cur);
-					if (!stmt.next()) {
+					if (!stmt->next()) {
 						break;
 					}
 				} // values
@@ -876,22 +644,22 @@ namespace intrasqlite {
 		bool get_dataset_indivs_ids(int nDatasetId, std::vector<int, ALLOCINT> &oInds) {
 			assert(this->is_valid());
 			oInds.clear();
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_GET_DATASET_INDIV_IDS);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_GET_DATASET_INDIV_IDS);
+			if (!stmt->is_valid()) {
 				return false;
 			}
-			stmt.set_parameter(1, nDatasetId);
-			if (!stmt.exec()) {
+			stmt->reset();
+			stmt->set_parameter(1, nDatasetId);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			while (stmt.has_values()) {
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
+			while (stmt->has_values()) {
+				DbValue v;
+				if (stmt->col_value(0, v)) {
 					int nId = v.int_value();
 					oInds.push_back(nId);
 				}
-				if (!stmt.next()) {
+				if (!stmt->next()) {
 					break;
 				}
 			} // while
@@ -903,9 +671,8 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_REMOVE_VARIABLE);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_REMOVE_VARIABLE);
+			if (!stmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -913,9 +680,9 @@ namespace intrasqlite {
 				const VariableType &cur = *it;
 				int nId = cur.id();
 				if (nId != 0) {
-					stmt.reset();
-					stmt.set_parameter(1, nId);
-					if (!stmt.exec()) {
+					stmt->reset();
+					stmt->set_parameter(1, nId);
+					if (!stmt->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -933,16 +700,15 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmtFetch1(pBase, SQL_FIND_VARIABLE_BY_ID);
-			sqlite::Statement stmtFetch2(pBase, SQL_VARIABLE_BY_DATASET_AND_SIGLE);
-			if ((!stmtFetch1.is_valid()) || (!stmtFetch2.is_valid())) {
+			PStatement stmtFetch1 = this->find_statement(SQL_FIND_VARIABLE_BY_ID);
+			PStatement stmtFetch2 = this->find_statement(SQL_VARIABLE_BY_DATASET_AND_SIGLE);
+			if ((!stmtFetch1->is_valid()) || (!stmtFetch2->is_valid())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_VARIABLE);
-			sqlite::Statement stmtUpdate(pBase, SQL_UPDATE_VARIABLE);
-			if ((!stmtUpdate.is_valid()) || (!stmtInsert.is_valid())) {
+			PStatement stmtInsert = this->find_statement(SQL_INSERT_VARIABLE);
+			PStatement stmtUpdate = this->find_statement(SQL_UPDATE_VARIABLE);
+			if ((!stmtUpdate->is_valid()) || (!stmtInsert->is_valid())) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -953,55 +719,55 @@ namespace intrasqlite {
 				StringType sigle = cur.sigle();
 				int nz = (cur.is_categvar()) ? 1 : 0;
 				if (nId != 0) {
-					stmtFetch1.reset();
-					stmtFetch1.set_parameter(1, nId);
-					if (!stmtFetch1.exec()) {
+					stmtFetch1->reset();
+					stmtFetch1->set_parameter(1, nId);
+					if (!stmtFetch1->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-					if (!stmtFetch1.has_values()) {
+					if (!stmtFetch1->has_values()) {
 						nId = 0;
 					}
 				} // nId
 				if ((nId == 0) && (nDatasetId != 0)) {
 					StringType ss = to_upper(trim(sigle));
-					stmtFetch2.reset();
-					stmtFetch2.set_parameter(1, nDatasetId);
-					stmtFetch2.set_parameter(2, ss);
-					if (!stmtFetch2.exec()) {
+					stmtFetch2->reset();
+					stmtFetch2->set_parameter(1, nDatasetId);
+					stmtFetch2->set_parameter(2, ss);
+					if (!stmtFetch2->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
-					if (stmtFetch2.has_values()) {
-						sqlite::DbValue v;
-						if (stmtFetch2.col_value(0, v)) {
+					if (stmtFetch2->has_values()) {
+						DbValue v;
+						if (stmtFetch2->col_value(0, v)) {
 							nId = v.int_value();
 						}
 					}
 				}
 				if ((nId != 0) && (!sigle.empty())) {
-					stmtUpdate.reset();
-					stmtUpdate.set_parameter(1, sigle);
-					stmtUpdate.set_parameter(2, cur.vartype());
-					stmtUpdate.set_parameter(3, nz);
-					stmtUpdate.set_parameter(4, cur.name());
-					stmtUpdate.set_parameter(5, cur.description());
-					stmtUpdate.set_parameter(6, cur.genre());
-					stmtUpdate.set_parameter(7, nId);
-					if (!stmtUpdate.exec()) {
+					stmtUpdate->reset();
+					stmtUpdate->set_parameter(1, sigle);
+					stmtUpdate->set_parameter(2, cur.vartype());
+					stmtUpdate->set_parameter(3, nz);
+					stmtUpdate->set_parameter(4, cur.name());
+					stmtUpdate->set_parameter(5, cur.description());
+					stmtUpdate->set_parameter(6, cur.genre());
+					stmtUpdate->set_parameter(7, nId);
+					if (!stmtUpdate->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
 				} else if ((nDatasetId != 0) && (!sigle.empty())) {
-					stmtInsert.reset();
-					stmtInsert.set_parameter(1, nDatasetId);
-					stmtInsert.set_parameter(2, sigle);
-					stmtInsert.set_parameter(3, cur.vartype());
-					stmtInsert.set_parameter(4, nz);
-					stmtInsert.set_parameter(5, cur.name());
-					stmtInsert.set_parameter(6, cur.description());
-					stmtInsert.set_parameter(7, cur.genre());
-					if (!stmtInsert.exec()) {
+					stmtInsert->reset();
+					stmtInsert->set_parameter(1, nDatasetId);
+					stmtInsert->set_parameter(2, sigle);
+					stmtInsert->set_parameter(3, cur.vartype());
+					stmtInsert->set_parameter(4, nz);
+					stmtInsert->set_parameter(5, cur.name());
+					stmtInsert->set_parameter(6, cur.description());
+					stmtInsert->set_parameter(7, cur.genre());
+					if (!stmtInsert->exec()) {
 						this->rollback_transaction();
 						return (false);
 					}
@@ -1018,183 +784,189 @@ namespace intrasqlite {
 			std::vector<int, ALLOCVEC> &oVec) {
 				assert(this->is_valid());
 				oVec.clear();
-				sqlite::Database *pBase = this->m_database.get();
-				sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VARIABLES_IDS);
-				if (!stmt.is_valid()) {
+				PStatement stmt = this->find_statement(SQL_FIND_DATASET_VARIABLES_IDS);
+				if (!stmt->is_valid()) {
 					return (false);
 				}
-				stmt.set_parameter(1, nDatasetId);
-				if (!stmt.exec()) {
+				stmt->reset();
+				stmt->set_parameter(1, nDatasetId);
+				if (!stmt->exec()) {
 					return (false);
 				}
-				while (stmt.has_values()) {
+				while (stmt->has_values()) {
 					{
-						sqlite::DbValue v;
-						if (stmt.col_value(0, v)) {
+						DbValue v;
+						if (stmt->col_value(0, v)) {
 							int nId = v.int_value();
 							oVec.push_back(nId);
 						}
 					}
-					if (!stmt.next()) {
+					if (!stmt->next()) {
 						break;
 					}
 				} // values
 				return (true);
 		} // get_dataset_variables_ids
+		void read_variable(PStatement stmt, VariableType &cur){
+			{
+				DbValue v;
+				if (stmt->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.vartype(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(5, v)) {
+					int nx = v.int_value();
+					bool b = (nx != 0) ? true : false;
+					cur.is_categvar(b);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(6, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(7, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(8, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.genre(s);
+					}
+				}
+			}
+		}// read_variable
 		template<class ALLOCVAR>
 		bool get_dataset_variables(int nDatasetId,
 			std::vector<VariableType, ALLOCVAR> &oVec) {
 				assert(this->is_valid());
 				oVec.clear();
-				sqlite::Database *pBase = this->m_database.get();
-				sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VARIABLES);
-				if (!stmt.is_valid()) {
+				PStatement stmt = this->find_statement(SQL_FIND_DATASET_VARIABLES);
+				if (!stmt->is_valid()) {
 					return (false);
 				}
-				stmt.set_parameter(1, nDatasetId);
-				if (!stmt.exec()) {
+				stmt->reset();
+				stmt->set_parameter(1, nDatasetId);
+				if (!stmt->exec()) {
 					return (false);
 				}
-				while (stmt.has_values()) {
+				while (stmt->has_values()) {
 					VariableType cur;
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(0, v)) {
-							int nId = v.int_value();
-							cur.id(nId);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(1, v)) {
-							int nVersion = v.int_value();
-							cur.version(nVersion);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(2, v)) {
-							int nx = v.int_value();
-							cur.dataset_id(nx);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(3, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.sigle(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(4, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.vartype(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(5, v)) {
-							int nx = v.int_value();
-							bool b = (nx != 0) ? true : false;
-							cur.is_categvar(b);
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(6, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.name(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(7, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.description(s);
-							}
-						}
-					}
-					{
-						sqlite::DbValue v;
-						if (stmt.col_value(8, v)) {
-							StringType s;
-							if (v.string_value(s)) {
-								cur.genre(s);
-							}
-						}
-					}
+					this->read_variable(stmt,cur);
 					oVec.push_back(cur);
-					if (!stmt.next()) {
+					if (!stmt->next()) {
 						break;
 					}
 				} // values
 				return (true);
 		} // get_dataset_variables
+		void read_dataset(PStatement stmt, DatasetType &cur){
+			{
+				DbValue v;
+				if (stmt->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(2, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+		}// read_dataset
 		template<class ALLOCVEC>
 		bool get_all_datasets(std::vector<DatasetType, ALLOCVEC> &oVec) {
 			assert(this->is_valid());
 			oVec.clear();
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_FIND_ALL_DATASETS);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_FIND_ALL_DATASETS);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
-			if (!stmt.exec()) {
+			stmt->reset();
+			if (!stmt->exec()) {
 				return (false);
 			}
-			while (stmt.has_values()) {
+			while (stmt->has_values()) {
 				DatasetType cur;
-				{
-					sqlite::DbValue v;
-					if (stmt.col_value(0, v)) {
-						int nId = v.int_value();
-						cur.id(nId);
-					}
-				}
-				{
-					sqlite::DbValue v;
-					if (stmt.col_value(1, v)) {
-						int nVersion = v.int_value();
-						cur.version(nVersion);
-					}
-				}
-				{
-					sqlite::DbValue v;
-					if (stmt.col_value(2, v)) {
-						StringType s;
-						if (v.string_value(s)) {
-							cur.sigle(s);
-						}
-					}
-				}
-				{
-					sqlite::DbValue v;
-					if (stmt.col_value(3, v)) {
-						StringType s;
-						if (v.string_value(s)) {
-							cur.name(s);
-						}
-					}
-				}
-				{
-					sqlite::DbValue v;
-					if (stmt.col_value(4, v)) {
-						StringType s;
-						if (v.string_value(s)) {
-							cur.description(s);
-						}
-					}
-				}
+				this->read_dataset(stmt, cur);
 				oVec.push_back(cur);
-				if (!stmt.next()) {
+				if (!stmt->next()) {
 					break;
 				}
 			} // values
@@ -1469,10 +1241,6 @@ namespace intrasqlite {
 				}
 			} // icol
 			bRet = this->check_values(nId);
-			if (!bRet) {
-				return (false);
-			}
-			bRet = this->load_dataset(oSet);
 			return bRet;
 	} // fill_data
 	template<class TSTRING>
@@ -1485,7 +1253,7 @@ namespace intrasqlite {
 	}
 	template<class TSTRING>
 	void StatDataManager<TSTRING>::get_indiv_status_name(
-		 typename StatDataManager<TSTRING>::StringType &s) const {
+		typename StatDataManager<TSTRING>::StringType &s) const {
 			std::string sx("STATUS");
 			StringType sz(sx.length(), ' ');
 			std::copy(sx.begin(), sx.end(), sz.begin());
@@ -1494,7 +1262,7 @@ namespace intrasqlite {
 	/////////////////////////////////////////
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::load_dataset(
-		 typename StatDataManager<TSTRING>::DatasetType &cur) {
+		typename StatDataManager<TSTRING>::DatasetType &cur) {
 			int nId = cur.id();
 			bool bOk = false;
 			if (nId != 0) {
@@ -1571,17 +1339,17 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_REMOVE_DATASET);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_REMOVE_DATASET);
+			if (!stmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(1, cur.id())) {
+			stmt->reset();
+			if (!stmt->set_parameter(1, cur.id())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.exec()) {
+			if (!stmt->exec()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -1601,29 +1369,29 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_UPDATE_DATASET);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_UPDATE_DATASET);
+			if (!stmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(1, cur.sigle())) {
+			stmt->reset();
+			if (!stmt->set_parameter(1, cur.sigle())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(2, cur.name())) {
+			if (!stmt->set_parameter(2, cur.name())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(3, cur.description())) {
+			if (!stmt->set_parameter(3, cur.description())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(4, cur.id())) {
+			if (!stmt->set_parameter(4, cur.id())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.exec()) {
+			if (!stmt->exec()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -1643,26 +1411,26 @@ namespace intrasqlite {
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_INSERT_DATASET);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_INSERT_DATASET);
+			if (!stmt->is_valid()) {
 				this->rollback_transaction();
 				return (false);
 			}
+			stmt->reset();
 			StringType sigle = cur.sigle();
-			if (!stmt.set_parameter(1, cur.sigle())) {
+			if (!stmt->set_parameter(1, cur.sigle())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(2, cur.name())) {
+			if (!stmt->set_parameter(2, cur.name())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.set_parameter(3, cur.description())) {
+			if (!stmt->set_parameter(3, cur.description())) {
 				this->rollback_transaction();
 				return (false);
 			}
-			if (!stmt.exec()) {
+			if (!stmt->exec()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -1682,224 +1450,67 @@ namespace intrasqlite {
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::get_dataset_by_sigle(
 		const  typename  StatDataManager<TSTRING>::StringType &xSigle,
-		 typename StatDataManager<TSTRING>::DatasetType &cur) {
+		typename StatDataManager<TSTRING>::DatasetType &cur) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_SIGLE);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_FIND_DATASET_BY_SIGLE);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
+			stmt->reset();
 			StringType sx = to_upper(trim(xSigle));
-			if (!stmt.set_parameter(1, sx.c_str())) {
+			if (!stmt->set_parameter(1, sx.c_str())) {
 				return (false);
 			}
-			if (!stmt.exec()) {
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			int n = stmt.cols();
-			assert(n >= 5);
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(2, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
+			this->read_dataset(stmt,cur);
 			return (true);
 	} // get_dataset_by_sigle
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::get_dataset_by_id(int xId,
-		 typename StatDataManager<TSTRING>::DatasetType &cur) {
+		typename StatDataManager<TSTRING>::DatasetType &cur) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_ID);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_FIND_DATASET_BY_ID);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
-			if (!stmt.set_parameter(1, xId)) {
+			stmt->reset();
+			if (!stmt->set_parameter(1, xId)) {
 				return (false);
 			}
-			if (!stmt.exec()) {
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			int n = stmt.cols();
-			assert(n >= 5);
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(2, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
+			this->read_dataset(stmt, cur);
 			return (true);
 	} // get_dataset_by_id
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::get_variable_by_dataset_and_sigle(int nDatasetId,
 		const  typename  StatDataManager<TSTRING>::StringType &xSigle,
-		 typename StatDataManager<TSTRING>::VariableType &cur) {
+		typename StatDataManager<TSTRING>::VariableType &cur) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_VARIABLE_BY_DATASET_AND_SIGLE);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_VARIABLE_BY_DATASET_AND_SIGLE);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
+			stmt->reset();
 			StringType sx = to_upper(trim(xSigle));
-			stmt.set_parameter(1, nDatasetId);
-			stmt.set_parameter(2, sx);
-			if (!stmt.exec()) {
+			stmt->set_parameter(1, nDatasetId);
+			stmt->set_parameter(2, sx);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(2, v)) {
-					int nx = v.int_value();
-					cur.dataset_id(nx);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.vartype(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(5, v)) {
-					int nx = v.int_value();
-					bool b = (nx != 0) ? true : false;
-					cur.is_categvar(b);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(6, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(7, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(8, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.genre(s);
-					}
-				}
-			}
+			this->read_variable(stmt, cur);
 			return (true);
 	} // get_variable_by_dataset_and_sigle
 	template<class TSTRING>
@@ -1908,42 +1519,42 @@ namespace intrasqlite {
 		const  typename  StatDataManager<TSTRING>::StringType &type, bool bCateg,
 		const  typename StatDataManager<TSTRING>::StringType &genre) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
 			{
-				sqlite::Statement stmt(pBase, SQL_VARIABLE_BY_DATASET_AND_SIGLE);
-				if (!stmt.is_valid()) {
+				PStatement stmt = this->find_statement(SQL_VARIABLE_BY_DATASET_AND_SIGLE);
+				if (!stmt->is_valid()) {
 					return (false);
 				}
+				stmt->reset();
 				StringType sx = to_upper(trim(sigle));
-				stmt.set_parameter(1, nDatasetId);
-				stmt.set_parameter(2, sx);
-				if (!stmt.exec()) {
+				stmt->set_parameter(1, nDatasetId);
+				stmt->set_parameter(2, sx);
+				if (!stmt->exec()) {
 					return (false);
 				}
-				if (stmt.has_values()) {
+				if (stmt->has_values()) {
 					return (true);
 				}
 			}
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_VARIABLE);
-			if (!stmtInsert.is_valid()) {
+			PStatement stmtInsert = this->find_statement(SQL_INSERT_VARIABLE);
+			if (!stmtInsert->is_valid()) {
 				return (false);
 			}
+			stmtInsert->reset();
 			int nz = (bCateg) ? 1 : 0;
 			StringType sSigle = trim(sigle);
 			StringType sType = trim(type);
 			StringType sGenre = trim(genre);
-			stmtInsert.reset();
-			stmtInsert.set_parameter(1, nDatasetId);
-			stmtInsert.set_parameter(2, sSigle);
-			stmtInsert.set_parameter(3, sType);
-			stmtInsert.set_parameter(4, nz);
-			stmtInsert.set_parameter(5, sSigle);
-			stmtInsert.set_parameter(6, sSigle);
-			stmtInsert.set_parameter(7, sGenre);
-			if (!stmtInsert.exec()) {
+			stmtInsert->set_parameter(1, nDatasetId);
+			stmtInsert->set_parameter(2, sSigle);
+			stmtInsert->set_parameter(3, sType);
+			stmtInsert->set_parameter(4, nz);
+			stmtInsert->set_parameter(5, sSigle);
+			stmtInsert->set_parameter(6, sSigle);
+			stmtInsert->set_parameter(7, sGenre);
+			if (!stmtInsert->exec()) {
 				this->rollback_transaction();
 				return (false);
 			}
@@ -1958,22 +1569,22 @@ namespace intrasqlite {
 		const  typename  StatDataManager<TSTRING>::StringType &status, int &nCount) {
 			assert(this->is_valid());
 			nCount = 0;
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_FIND_INDIVS_BY_DATASET_AND_STATUS_COUNT);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_FIND_INDIVS_BY_DATASET_AND_STATUS_COUNT);
+			if (!stmt->is_valid()) {
 				return false;
 			}
+			stmt->reset();
 			StringType sStatus = to_upper(trim(status));
-			stmt.set_parameter(1, nId);
-			stmt.set_parameter(2, sStatus);
-			if (!stmt.exec()) {
+			stmt->set_parameter(1, nId);
+			stmt->set_parameter(2, sStatus);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			sqlite::DbValue v;
-			if (stmt.col_value(0, v)) {
+			DbValue v;
+			if (stmt->col_value(0, v)) {
 				nCount = v.int_value();
 			}
 			return (true);
@@ -1981,79 +1592,23 @@ namespace intrasqlite {
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::get_indiv_by_dataset_sigle(int nDatasetId,
 		const  typename StatDataManager<TSTRING>::StringType &xSigle,
-		 typename StatDataManager<TSTRING>::IndivType &cur) {
+		typename StatDataManager<TSTRING>::IndivType &cur) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_INDIV_BY_DATASET_AND_SIGLE);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_INDIV_BY_DATASET_AND_SIGLE);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
+			stmt->reset();
 			StringType sigle = to_upper(trim(xSigle));
-			stmt.set_parameter(1, nDatasetId);
-			stmt.set_parameter(2, sigle);
-			if (!stmt.exec()) {
+			stmt->set_parameter(1, nDatasetId);
+			stmt->set_parameter(2, sigle);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(2, v)) {
-					int nx = v.int_value();
-					cur.dataset_id(nx);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(5, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(6, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.status(s);
-					}
-				}
-			}
+			this->read_indiv(stmt, cur);
 			return (true);
 	} // get_indiv_by_dataset_sigle
 	template<class TSTRING>
@@ -2061,22 +1616,22 @@ namespace intrasqlite {
 		const  typename  StatDataManager<TSTRING>::StringType &status, int &nCount) {
 			assert(this->is_valid());
 			nCount = 0;
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_FIND_DATASET_BY_STATUS_VALUES_COUNT);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->SQL_FIND_ALL_DATASETS(SQL_FIND_DATASET_BY_STATUS_VALUES_COUNT);
+			if (!stmt->is_valid()) {
 				return false;
 			}
+			stmt->reset();
 			StringType sStatus = to_upper(trim(status));
-			stmt.set_parameter(1, nId);
-			stmt.set_parameter(2, sStatus);
-			if (!stmt.exec()) {
+			stmt->set_parameter(1, nId);
+			stmt->set_parameter(2, sStatus);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			sqlite::DbValue v;
-			if (stmt.col_value(0, v)) {
+			DbValue v;
+			if (stmt->col_value(0, v)) {
 				nCount = v.int_value();
 			}
 			return (true);
@@ -2092,12 +1647,11 @@ namespace intrasqlite {
 			return (true);
 		}
 		assert(this->is_valid());
-		sqlite::Database *pBase = this->m_database.get();
-		sqlite::Statement stmt(pBase, SQL_BEGIN_TRANSACTION);
-		if (!stmt.is_valid()) {
+		PStatement stmt = this->find_statement(SQL_BEGIN_TRANSACTION);
+		if (!stmt->is_valid()) {
 			return (false);
 		}
-		if (stmt.exec()) {
+		if (stmt->exec()) {
 			this->m_intransaction = true;
 			return (true);
 		}
@@ -2109,12 +1663,11 @@ namespace intrasqlite {
 			return (false);
 		}
 		assert(this->is_valid());
-		sqlite::Database *pBase = this->m_database.get();
-		sqlite::Statement stmt(pBase, SQL_COMMIT_TRANSACTION);
-		if (!stmt.is_valid()) {
+		PStatement stmt = this->find_statement(SQL_COMMIT_TRANSACTION);
+		if (!stmt->is_valid()) {
 			return (false);
 		}
-		if (stmt.exec()) {
+		if (stmt->exec()) {
 			this->m_intransaction = false;
 			return (true);
 		}
@@ -2126,12 +1679,11 @@ namespace intrasqlite {
 			return (false);
 		}
 		assert(this->is_valid());
-		sqlite::Database *pBase = this->m_database.get();
-		sqlite::Statement stmt(pBase, SQL_ROLLBACK_TRANSACTION);
-		if (!stmt.is_valid()) {
+		PStatement stmt = this->find_statement(SQL_ROLLBACK_TRANSACTION);
+		if (!stmt->is_valid()) {
 			return (false);
 		}
-		if (stmt.exec()) {
+		if (stmt->exec()) {
 			this->m_intransaction = false;
 			return (true);
 		}
@@ -2140,7 +1692,7 @@ namespace intrasqlite {
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::close(void) {
 		bool bRet = true;
-		sqlite::Database *pbase = this->m_database.get();
+		Database *pbase = this->m_database.get();
 		if (pbase != nullptr) {
 			this->reset();
 			if (pbase->close()) {
@@ -2206,31 +1758,30 @@ namespace intrasqlite {
 			if (oInds.empty()) {
 				return (true);
 			}
-			sqlite::Database *pBase = this->m_database.get();
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Statement stmtFetch(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_VALUE);
-			if ((!stmtFetch.is_valid()) || (!stmtInsert.is_valid())) {
+			PStatement stmtFetch = this->find_statement(SQL_VALUES_BY_VARIABLE_INDIV);
+			PStatement stmtInsert = this->find_statement(SQL_INSERT_VALUE);
+			if ((!stmtFetch->is_valid()) || (!stmtInsert->is_valid())) {
 				return (false);
 			}
 			for (auto jt = oInds.begin(); jt != oInds.end(); ++jt) {
 				int nIndivId = *jt;
-				stmtFetch.reset();
-				stmtFetch.set_parameter(1, nVarId);
-				stmtFetch.set_parameter(2, nIndivId);
-				if (!stmtFetch.exec()) {
+				stmtFetch->reset();
+				stmtFetch->set_parameter(1, nVarId);
+				stmtFetch->set_parameter(2, nIndivId);
+				if (!stmtFetch->exec()) {
 					return (false);
 				}
-				if (stmtFetch.has_values()) {
+				if (stmtFetch->has_values()) {
 					continue;
 				}
-				stmtInsert.reset();
-				stmtInsert.set_parameter(1, nVarId);
+				stmtInsert->reset();
+				stmtInsert->set_parameter(1, nVarId);
 				stmtInsert.set_parameter(2, nIndivId);
-				stmtInsert.set_parameter_null(3);
-				if (!stmtInsert.exec()) {
+				stmtInsert->set_parameter_null(3);
+				if (!stmtInsert->exec()) {
 					this->rollback_transaction();
 					return (false);
 				}
@@ -2251,31 +1802,30 @@ namespace intrasqlite {
 			if (oVars.empty()) {
 				return (true);
 			}
-			sqlite::Database *pBase = this->m_database.get();
 			if (!this->begin_transaction()) {
 				return (false);
 			}
-			sqlite::Statement stmtFetch(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
-			sqlite::Statement stmtInsert(pBase, SQL_INSERT_VALUE);
-			if ((!stmtFetch.is_valid()) || (!stmtInsert.is_valid())) {
+			PStatement stmtFetch = this->find_statement(SQL_VALUES_BY_VARIABLE_INDIV);
+			PStatement stmtInsert = this->find_statement(QL_INSERT_VALUE);
+			if ((!stmtFetch->is_valid()) || (!stmtInsert->is_valid())) {
 				return (false);
 			}
 			for (auto jt = oVars.begin(); jt != oVars.end(); ++jt) {
 				int nVarId = *jt;
-				stmtFetch.reset();
-				stmtFetch.set_parameter(1, nVarId);
-				stmtFetch.set_parameter(2, nIndivId);
-				if (!stmtFetch.exec()) {
+				stmtFetch->reset();
+				stmtFetch->set_parameter(1, nVarId);
+				stmtFetch->set_parameter(2, nIndivId);
+				if (!stmtFetch->exec()) {
 					return (false);
 				}
-				if (stmtFetch.has_values()) {
+				if (stmtFetch->has_values()) {
 					continue;
 				}
-				stmtInsert.reset();
-				stmtInsert.set_parameter(1, nVarId);
-				stmtInsert.set_parameter(2, nIndivId);
-				stmtInsert.set_parameter_null(3);
-				if (!stmtInsert.exec()) {
+				stmtInsert->reset();
+				stmtInsert->set_parameter(1, nVarId);
+				stmtInsert->set_parameter(2, nIndivId);
+				stmtInsert->set_parameter_null(3);
+				if (!stmtInsert->exec()) {
 					this->rollback_transaction();
 					return (false);
 				}
@@ -2295,7 +1845,6 @@ namespace intrasqlite {
 		if (oInds.empty()) {
 			return (true);
 		}
-		sqlite::Database *pBase = this->m_database.get();
 		std::vector<int> oVars;
 		if (!this->get_dataset_variables_ids(nDatasetId, oVars)) {
 			return (false);
@@ -2303,29 +1852,29 @@ namespace intrasqlite {
 		if (!this->begin_transaction()) {
 			return (false);
 		}
-		sqlite::Statement stmtFetch(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
-		sqlite::Statement stmtInsert(pBase, SQL_INSERT_VALUE);
-		if ((!stmtFetch.is_valid()) || (!stmtInsert.is_valid())) {
+		PStatement stmtFetch = this->find_statement(SQL_VALUES_BY_VARIABLE_INDIV);
+		PStatement stmtInsert = this->find_statement(SQL_INSERT_VALUE);
+		if ((!stmtFetch->is_valid()) || (!stmtInsert->is_valid())) {
 			return (false);
 		}
 		for (auto it = oVars.begin(); it != oVars.end(); ++it) {
 			int nVarId = *it;
 			for (auto jt = oInds.begin(); jt != oInds.end(); ++jt) {
 				int nIndivId = *jt;
-				stmtFetch.reset();
-				stmtFetch.set_parameter(1, nVarId);
-				stmtFetch.set_parameter(2, nIndivId);
-				if (!stmtFetch.exec()) {
+				stmtFetch->reset();
+				stmtFetch->set_parameter(1, nVarId);
+				stmtFetch->set_parameter(2, nIndivId);
+				if (!stmtFetch->exec()) {
 					return (false);
 				}
-				if (stmtFetch.has_values()) {
+				if (stmtFetch->has_values()) {
 					continue;
 				}
-				stmtInsert.reset();
-				stmtInsert.set_parameter(1, nVarId);
-				stmtInsert.set_parameter(2, nIndivId);
-				stmtInsert.set_parameter_null(3);
-				if (!stmtInsert.exec()) {
+				stmtInsert->reset();
+				stmtInsert->set_parameter(1, nVarId);
+				stmtInsert->set_parameter(2, nIndivId);
+				stmtInsert->set_parameter_null(3);
+				if (!stmtInsert->exec()) {
 					this->rollback_transaction();
 					return (false);
 				}
@@ -2383,90 +1932,40 @@ namespace intrasqlite {
 	bool StatDataManager<TSTRING>::get_value_by_variable_indiv(int nVarId,
 		int nIndivId, intra::Value &cur) {
 			assert(this->is_valid());
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_VALUES_BY_VARIABLE_INDIV);
-			sqlite::Statement stmtVarType(pBase, SQL_FIND_VARIABLE_TYPE);
-			if ((!stmt.is_valid()) || (!stmtVarType.is_valid())) {
+			PStatement stmt = this->find_statement(SQL_VALUES_BY_VARIABLE_INDIV);
+			if (!stmt->is_valid()) {
 				return (false);
 			}
-			stmt.set_parameter(1, nVarId);
-			stmt.set_parameter(2, nIndivId);
-			if (!stmt.exec()) {
+			stmt->reset();
+			stmt->set_parameter(1, nVarId);
+			stmt->set_parameter(2, nIndivId);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
-			std::string vartype;
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(2, v)) {
-					int nx = v.int_value();
-					cur.variable_id(nx);
-					stmtVarType.set_parameter(1, nx);
-					if (!stmtVarType.exec()) {
-						return (false);
-					}
-					if (!stmtVarType.has_values()) {
-						return (false);
-					}
-					sqlite::DbValue vv;
-					stmtVarType.col_value(0, vv);
-					vv.string_value(vartype);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(3, v)) {
-					int nx = v.int_value();
-					cur.indiv_id(nx);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (stmt.col_value(4, v)) {
-					boost::any vx = v.value();
-					intra::Value x;
-					x.value(vx);
-					boost::any vy;
-					this->convert_value(x, vartype, vy);
-					cur.value(vy);
-				}
-			}
+			this->read_value(stmt,cur);
 			return (true);
 	} // get_dataset_indivs
 	template<class TSTRING>
 	bool StatDataManager<TSTRING>::get_dataset_values_count(int nId, int &nCount) {
 		assert(this->is_valid());
 		nCount = 0;
-		sqlite::Database *pBase = this->m_database.get();
-		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_VALUES_COUNT);
-		if (!stmt.is_valid()) {
+		PStatement stmt = this->find_statement(SQL_FIND_DATASET_VALUES_COUNT);
+		if (!stmt->is_valid()) {
 			return false;
 		}
-		stmt.set_parameter(1, nId);
-		if (!stmt.exec()) {
+		stmt->reset();
+		stmt->set_parameter(1, nId);
+		if (!stmt->exec()) {
 			return (false);
 		}
-		if (!stmt.has_values()) {
+		if (!stmt->has_values()) {
 			return (false);
 		}
-		sqlite::DbValue v;
-		if (stmt.col_value(0, v)) {
+		DbValue v;
+		if (stmt->col_value(0, v)) {
 			nCount = v.int_value();
 		}
 		return (true);
@@ -2476,20 +1975,20 @@ namespace intrasqlite {
 		int &nCount) {
 			assert(this->is_valid());
 			nCount = 0;
-			sqlite::Database *pBase = this->m_database.get();
-			sqlite::Statement stmt(pBase, SQL_VALUES_BY_VARIABLE_NOT_NULL_COUNT);
-			if (!stmt.is_valid()) {
+			PStatement stmt = this->find_statement(SQL_VALUES_BY_VARIABLE_NOT_NULL_COUNT);
+			if (stmt->is_valid()) {
 				return false;
 			}
-			stmt.set_parameter(1, nVarId);
-			if (!stmt.exec()) {
+			stmt->reset();
+			stmt->set_parameter(1, nVarId);
+			if (!stmt->exec()) {
 				return (false);
 			}
-			if (!stmt.has_values()) {
+			if (!stmt->has_values()) {
 				return (false);
 			}
 			sqlite::DbValue v;
-			if (stmt.col_value(0, v)) {
+			if (stmt->col_value(0, v)) {
 				nCount = v.int_value();
 			}
 			return (true);
@@ -2498,20 +1997,20 @@ namespace intrasqlite {
 	bool StatDataManager<TSTRING>::get_dataset_indivs_count(int nId, int &nCount) {
 		assert(this->is_valid());
 		nCount = 0;
-		sqlite::Database *pBase = this->m_database.get();
-		sqlite::Statement stmt(pBase, SQL_FIND_DATASET_INDIVS_COUNT);
-		if (!stmt.is_valid()) {
+		PStatement stmt = this->find_statement(SQL_FIND_DATASET_INDIVS_COUNT);
+		if (!stmt->is_valid()) {
 			return false;
 		}
-		stmt.set_parameter(1, nId);
-		if (!stmt.exec()) {
+		stmt->reset();
+		stmt->set_parameter(1, nId);
+		if (!stmt->exec()) {
 			return (false);
 		}
-		if (!stmt.has_values()) {
+		if (!stmt->has_values()) {
 			return (false);
 		}
-		sqlite::DbValue v;
-		if (stmt.col_value(0, v)) {
+		DbValue v;
+		if (stmt->col_value(0, v)) {
 			nCount = v.int_value();
 		}
 		return (true);

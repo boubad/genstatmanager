@@ -10,145 +10,9 @@
 #include <string.h>
 ///////////////////////////////
 namespace sqlite {
-
-Statement::Statement(Database &oBase, const char *pszSQL) :
-		m_pBase(&oBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(pszSQL != nullptr);
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	int nbytes = ::strlen(pszSQL) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, pszSQL, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database *pBase, const char *pszSQL) :
-		m_pBase(pBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(pszSQL != nullptr);
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	int nbytes = ::strlen(pszSQL) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, pszSQL, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database &oBase, const wchar_t *pszSQL) :
-		m_pBase(&oBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(pszSQL != nullptr);
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	std::wstring ss(pszSQL);
-	std::string s(ss.length(), ' ');
-	std::copy(ss.begin(), ss.end(), s.begin());
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database *pBase, const wchar_t *pszSQL) :
-		m_pBase(pBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(pszSQL != nullptr);
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	std::wstring ss(pszSQL);
-	std::string s(ss.length(), ' ');
-	std::copy(ss.begin(), ss.end(), s.begin());
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database &oBase, const std::string &s) :
-		m_pBase(&oBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database *pBase, const std::string &s) :
-		m_pBase(pBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-	}
-} // Statement
-Statement::Statement(Database &oBase, const std::wstring &ss) :
-		m_pBase(&oBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	std::string s(ss.length(), L' ');
-	std::copy(ss.begin(), ss.end(), s.begin());
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
-} // Statement
-Statement::Statement(Database *pBase, const std::wstring &ss) :
-		m_pBase(pBase), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
-	assert(this->m_pBase != nullptr);
-	assert(this->m_pBase->is_open());
-	::sqlite3 *pdb = this->m_pBase->m_pDb;
-	assert(pdb != nullptr);
-	const char *pszTail = nullptr;
-	std::string s(ss.length(), L' ');
-	std::copy(ss.begin(), ss.end(), s.begin());
-	const char *sql = s.c_str();
-	int nbytes = ::strlen(sql) + 1;
-	::sqlite3_stmt *pRes = nullptr;
-	int rc = ::sqlite3_prepare_v2(pdb, sql, nbytes, &pRes, &pszTail);
-	if ((rc == SQLITE_OK) && (pRes != nullptr)) {
-		this->m_pstmt = pRes;
-		this->m_pBase->m_stmts.push_back(this);
-	}
+/////////////////////////////////////////
+	Statement::Statement() :
+		m_pBase(nullptr), m_pstmt(nullptr), m_lastcode(SQLITE_OK) {
 } // Statement
 bool Statement::is_valid(void) const {
 	return ((this->m_pBase != nullptr) && m_pBase->is_open()
@@ -309,17 +173,16 @@ bool Statement::close(void) {
 			this->m_pstmt = nullptr;
 		}
 	}
-	Database *pBase = this->m_pBase;
-	if (pBase != nullptr) {
-		std::list<PStatement> &olist = pBase->m_stmts;
-		for (auto it = olist.begin(); it != olist.end(); ++it) {
-			PStatement p0 = *it;
-			if (p0 == this) {
-				olist.erase(it);
-				return (true);
+	if (this->m_pBase != nullptr){
+		std::map<std::string,StatementPtr> &oMap = this->m_pBase->m_mapstmts;
+		for (auto it = oMap.begin(); it != oMap.end(); ++ it){
+			StatementPtr oo = (*it).second;
+			if (oo.get() == this){
+				oMap.erase(it);
+				break;
 			}
-		} // it
-	} // pBase
+		}// it
+	}
 	return (bRet);
 } // close
 bool Statement::reset(void) {
@@ -397,7 +260,7 @@ bool Statement::set_parameter(int iParam, const Blob &oBlob) {
 	::sqlite3_stmt *p = this->m_pstmt;
 	assert(p != nullptr);
 	assert(iParam > 0);
-	int nbytes = (size_t)(nSize * sizeof(byte));
+	int nbytes = (int)(nSize * sizeof(byte));
 	if (::sqlite3_bind_blob(p, iParam, pData, nbytes,
 	SQLITE_TRANSIENT) != SQLITE_OK) {
 		this->m_pBase->internal_get_error();
@@ -500,7 +363,6 @@ bool Statement::set_parameter(const std::wstring &sname,
 }
 ///////////////////////////////////
 Statement::~Statement() {
-	this->close();
 }
 
 } /* namespace sqlite */

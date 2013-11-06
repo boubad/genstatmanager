@@ -5,8 +5,10 @@
 #include "sqlite3.h"
 ///////////////////////////
 #include <cassert>
+#include <memory>
 #include <string>
 #include <list>
+#include <map>
 #include <algorithm>
 //////////////////////////
 #ifndef __MY_BOOST_INC__
@@ -19,6 +21,7 @@ namespace sqlite {
 ////////////////////////////////////////
 class Statement;
 typedef Statement *PStatement;
+typedef std::shared_ptr<Statement> StatementPtr;
 ////////////////////////////////////////
 class Database {
 	friend class Statement;
@@ -26,7 +29,7 @@ private:
 	int m_errorcode;
 	::sqlite3 *m_pDb;
 	std::string m_errorstring;
-	std::list<PStatement> m_stmts;
+	std::map<std::string,StatementPtr> m_mapstmts;
 public:
 	Database();
 	Database(const char *pszFilename);
@@ -62,6 +65,12 @@ public:
 		}
 		return (false);
 	} // get_last_error
+	//
+	PStatement find_statement(const std::string &squery);
+	PStatement find_statement(const std::wstring &squery);
+	PStatement find_statement(const char *squery);
+	PStatement find_statement(const wchar_t *squery);
+	//
 	bool close(void);
 	bool exec_sql(const char *pszSQL);
 	bool exec_sql(const wchar_t *pwszSQL);
@@ -71,6 +80,7 @@ protected:
 	virtual void prepare_close(void);
 	void internal_clear_error(void);
 	void internal_get_error(void);
+
 private:
 	// no implementation
 	Database(const Database &other);

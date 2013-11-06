@@ -25,19 +25,11 @@ private:
 	std::vector<DbValue> m_vals;
 	std::vector<std::string> m_names;
 public:
-	Statement(Database &oBase, const char *pszSQL);
-	Statement(Database *pBase, const char *pszSQL);
-	Statement(Database &oBase, const wchar_t *pszSQL);
-	Statement(Database *pBase, const wchar_t *pszSQL);
-	Statement(Database &oBase, const std::string &s);
-	Statement(Database *pBase, const std::string &s);
-	Statement(Database &oBase, const std::wstring &s);
-	Statement(Database *pBase, const std::wstring &s);
+	Statement();
 	virtual ~Statement();
 public:
 	bool is_valid(void) const;
 	bool close(void);
-
 	bool reset(void);
 	//
 	bool set_parameter_null(int iParam);
