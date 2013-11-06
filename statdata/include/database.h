@@ -2,7 +2,11 @@
 #ifndef DATABASE_H_
 #define DATABASE_H_
 ///////////////////////
+#ifdef _MSC_VER
 #include "sqlite3.h"
+#else
+#include <sqlite3.h>
+#endif
 ///////////////////////////
 #include <cassert>
 #include <memory>

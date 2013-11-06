@@ -109,6 +109,11 @@ const char *StatDataManager<TSTRING>::SQL_FIND_DATASET_INDIVS =
 		"SELECT individ,optlock,datasetid,sigle,nom,description,status"
 				" FROM dbindiv WHERE datasetid = ?1 ORDER BY sigle";
 template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_FIND_DATASET_INDIVS_PAGED =
+		"SELECT individ,optlock,datasetid,sigle,nom,description,status"
+				" FROM dbindiv WHERE datasetid = ?1 ORDER BY sigle"
+				" LIMIT ?2 OFFSET ?3"; 
+template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_INDIV_BY_DATASET_AND_SIGLE =
 		"SELECT individ,optlock,datasetid,sigle,nom,description,status"
 				" FROM dbindiv WHERE datasetid = ?1 AND UPPER(LTRIM(RTRIM(sigle))) = ?2";
@@ -194,6 +199,11 @@ template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_VALUES_BY_VARIABLE_NOT_NULL_COUNT =
 		"SELECT COUNT(*)"
 				" FROM dbvalue WHERE variableid = ?1 AND stringval IS NOT NULL";
+template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_VALUES_PAIR_BY_VARIABLE_NOT_NULL =
+		"SELECT individ,stringval"
+		 " FROM dbvalue WHERE variableid = ?1 AND stringval IS NOT NULL"
+		 " ORDER BY individ ASC LIMIT ?2 OFFSET ?3";
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_VALUE_BY_ID =
 		"SELECT valueid,optlock,variableid,individ,stringval"

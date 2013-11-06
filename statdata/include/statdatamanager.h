@@ -83,6 +83,209 @@ namespace intrasqlite {
 		virtual void get_indiv_sigle_name(StringType &s) const;
 		virtual void get_indiv_status_name(StringType &s) const;
 	protected:
+		void read_dataset(PStatement stmt, DatasetType &cur){
+			{
+				DbValue v;
+				if (stmt->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(2, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+		}// read_dataset
+		void read_indiv(PStatement pStmtFetch, IndivType &cur){
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				sqlite::DbValue v;
+				if (pStmtFetch->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(5, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (pStmtFetch->col_value(6, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.status(s);
+					}
+				}
+			}
+		}// read_indiv
+		void read_variable(PStatement stmt, VariableType &cur){
+			{
+				DbValue v;
+				if (stmt->col_value(0, v)) {
+					int nId = v.int_value();
+					cur.id(nId);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(1, v)) {
+					int nVersion = v.int_value();
+					cur.version(nVersion);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(2, v)) {
+					int nx = v.int_value();
+					cur.dataset_id(nx);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(3, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.sigle(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(4, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.vartype(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(5, v)) {
+					int nx = v.int_value();
+					bool b = (nx != 0) ? true : false;
+					cur.is_categvar(b);
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(6, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.name(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(7, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.description(s);
+					}
+				}
+			}
+			{
+				DbValue v;
+				if (stmt->col_value(8, v)) {
+					StringType s;
+					if (v.string_value(s)) {
+						cur.genre(s);
+					}
+				}
+			}
+		}// read_variable
+		bool get_variable_type(int nVarId, StringType &vartype){
+			vartype.clear();
+			std::map<int, StringType> &oMap = this->m_vartypes;
+			if (oMap.find(nVarId) != oMap.end()) {
+				vartype = oMap[nVarId];
+			} else {
+				PStatement pStmtVar = this->find_statement(SQL_FIND_VARIABLE_TYPE);
+				pStmtVar->reset();
+				pStmtVar->set_parameter(1, nVarId);
+				if (!pStmtVar->exec()) {
+					return (false);
+				}
+				if (!pStmtVar->has_values()) {
+					return (false);
+				}
+				DbValue vv;
+				pStmtVar->col_value(0, vv);
+				vv.string_value(vartype);
+				if (vartype.empty()){
+					return (false);
+				}
+				oMap[nVarId] = vartype;
+			}
+			return (true);
+		}// get_variableType
 		PStatement find_statement(const char *pszSQL){
 			assert(this->is_valid());
 			Database *pBase = this->m_database.get();
@@ -92,7 +295,6 @@ namespace intrasqlite {
 			return pRet;
 		}// find_statement
 		bool read_value(PStatement pStmtFetch, ValueType &cur){
-			std::map<int, StringType> &oMap = this->m_vartypes;
 			StringType vartype;
 			{
 				DbValue v;
@@ -112,31 +314,11 @@ namespace intrasqlite {
 				DbValue v;
 				if (pStmtFetch->col_value(2, v)) {
 					int nx = v.int_value();
-					cur.variable_id(nx);
-					if (oMap.find(nx) != oMap.end()) {
-						vartype = oMap[nx];
-					} else {
-						PStatement pStmtVar = this->find_statement(SQL_FIND_VARIABLE_TYPE);
-						pStmtVar->reset();
-						pStmtVar->set_parameter(1, nx);
-						if (!pStmtVar->exec()) {
-							return (false);
-						}
-						if (!pStmtVar->has_values()) {
-							return (false);
-						}
-						DbValue vv;
-						pStmtVar->col_value(0, vv);
-						vv.string_value(vartype);
-						if (vartype.empty()){
-							return (false);
-						}
-						oMap[nx] = vartype;
+					if (!this->get_variable_type(nx,vartype)){
+						return (false);
 					}
+					cur.variable_id(nx);
 				}
-			}
-			if (vartype.empty()){
-				return (false);
 			}
 			{
 				DbValue v;
@@ -164,12 +346,12 @@ namespace intrasqlite {
 		bool check_pred_dataset(int nDatasetId);
 		void convert_value(const ValueType &s, const StringType &vartype,
 			boost::any &v);
+		void reset(void) {
+		} // reset
 	public:
 		StatDataManager();
 		virtual ~StatDataManager();
 	public:
-		void reset(void) {
-		} // reset
 		template<class IFSTREAM>
 		bool process_data(IFSTREAM &inFile, const StringType &datasetSigle,
 			DatasetType &oSet, const Char & delim, const StringType & na);
@@ -203,6 +385,40 @@ namespace intrasqlite {
 		bool get_dataset_by_id(int xId, DatasetType &cur);
 		bool is_valid(void) const;
 		bool close(void);
+		bool get_variable_by_id(int nVarId,VariableType &cur) {
+			assert(this->is_valid());
+			PStatement stmt = this->find_statement(SQL_FIND_VARIABLE_BY_ID);
+			if (!stmt->is_valid()) {
+				return (false);
+			}
+			stmt->reset();
+			stmt->set_parameter(1, nVarId);
+			if (!stmt->exec()) {
+				return (false);
+			}
+			if (!stmt->has_values()) {
+				return (false);
+			}
+			this->read_variable(stmt, cur);
+			return (true);
+		} // get_variable_by_id
+		bool get_indiv_by_id(int nIndId,IndivType &cur) {
+			assert(this->is_valid());
+			PStatement stmt = this->find_statement(SQL_FIND_INDIV_BY_ID);
+			if (!stmt->is_valid()) {
+				return (false);
+			}
+			stmt->reset();
+			stmt->set_parameter(1, nIndId);
+			if (!stmt->exec()) {
+				return (false);
+			}
+			if (!stmt->has_values()) {
+				return (false);
+			}
+			this->read_indiv(stmt, cur);
+			return (true);
+		} // get_indiv_by_id
 	public:
 		template<class ALLOCVAL>
 		bool remove_values(const std::vector<ValueType, ALLOCVAL> &oVec) {
@@ -528,65 +744,6 @@ namespace intrasqlite {
 			}
 			return (true);
 		} // maintains_indivs
-		void read_indiv(PStatement pStmtFetch, IndivType &cur){
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(2, v)) {
-					int nx = v.int_value();
-					cur.dataset_id(nx);
-				}
-			}
-			{
-				sqlite::DbValue v;
-				if (pStmtFetch->col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(5, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (pStmtFetch->col_value(6, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.status(s);
-					}
-				}
-			}
-		}// read_indiv
 		template<class ALLOCVEC>
 		bool get_dataset_indivs_by_status(int nDatasetId,
 			std::vector<IndivType, ALLOCVEC> &oVec, const StringType &status,
@@ -627,6 +784,35 @@ namespace intrasqlite {
 				}
 				stmt->reset();
 				stmt->set_parameter(1, nDatasetId);
+				if (!stmt->exec()) {
+					return (false);
+				}
+				while (stmt->has_values()) {
+					IndivType cur;
+					this->read_indiv(stmt,cur);
+					oVec.push_back(cur);
+					if (!stmt->next()) {
+						break;
+					}
+				} // values
+				return (true);
+		} // get_dataset_indivs
+		template<class ALLOCVEC>
+		bool get_dataset_indivs(int nDatasetId,
+			std::vector<IndivType, ALLOCVEC> &oVec,int skip,int taken) {
+				assert(this->is_valid());
+				oVec.clear();
+				if ((skip < 0) || (taken < 1)){
+					return (false);
+				}
+				PStatement stmt = this->find_statement(SQL_FIND_DATASET_INDIVS_PAGED);
+				if (!stmt->is_valid()) {
+					return (false);
+				}
+				stmt->reset();
+				stmt->set_parameter(1, nDatasetId);
+				stmt->set_parameter(2, taken);
+				stmt->set_parameter(3, skip);
 				if (!stmt->exec()) {
 					return (false);
 				}
@@ -807,82 +993,6 @@ namespace intrasqlite {
 				} // values
 				return (true);
 		} // get_dataset_variables_ids
-		void read_variable(PStatement stmt, VariableType &cur){
-			{
-				DbValue v;
-				if (stmt->col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(2, v)) {
-					int nx = v.int_value();
-					cur.dataset_id(nx);
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.vartype(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(5, v)) {
-					int nx = v.int_value();
-					bool b = (nx != 0) ? true : false;
-					cur.is_categvar(b);
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(6, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(7, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
-				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(8, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.genre(s);
-					}
-				}
-			}
-		}// read_variable
 		template<class ALLOCVAR>
 		bool get_dataset_variables(int nDatasetId,
 			std::vector<VariableType, ALLOCVAR> &oVec) {
@@ -907,49 +1017,74 @@ namespace intrasqlite {
 				} // values
 				return (true);
 		} // get_dataset_variables
-		void read_dataset(PStatement stmt, DatasetType &cur){
-			{
-				DbValue v;
-				if (stmt->col_value(0, v)) {
-					int nId = v.int_value();
-					cur.id(nId);
-				}
+		template <class ALLOCPAIR>
+		bool get_variable_values_pair_not_null(int nVarId,std::map<int,boost::any,std::less<int>,ALLOCPAIR> &oMap, int skip, int taken){
+			oMap.clear();
+			if ((skip < 0) || (taken < 1)) {
+				return (false);
 			}
-			{
-				DbValue v;
-				if (stmt->col_value(1, v)) {
-					int nVersion = v.int_value();
-					cur.version(nVersion);
-				}
+			assert(this->is_valid());
+			StringType vartype;
+			if (!this->get_variable_type(nVarId,vartype)){
+				return (false);
 			}
-			{
-				DbValue v;
-				if (stmt->col_value(2, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.sigle(s);
+			PStatement pStmtFetch = this->find_statement(SQL_VALUES_PAIR_BY_VARIABLE_NOT_NULL);
+			//
+			pStmtFetch->reset();
+			pStmtFetch->set_parameter(1, nVarId);
+			pStmtFetch->set_parameter(2, taken);
+			pStmtFetch->set_parameter(3, skip);
+			if (!pStmtFetch->exec()) {
+				return (false);
+			}
+			while (pStmtFetch->has_values()) {
+				int nId = 0;
+				boost::any vcur;
+				{
+					DbValue v;
+					if (pStmtFetch->col_value(0, v)) {
+						nId = v.int_value();
 					}
 				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(3, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.name(s);
+				{
+					DbValue v;
+					if (pStmtFetch->col_value(1, v)) {
+						boost::any vx = v.value();
+						ValueType x;
+						x.value(vx);
+						this->convert_value(x, vartype, vcur);
 					}
 				}
-			}
-			{
-				DbValue v;
-				if (stmt->col_value(4, v)) {
-					StringType s;
-					if (v.string_value(s)) {
-						cur.description(s);
-					}
+				if ((nId != 0) && (!vcur.empty())){
+					oMap[nId] = vcur;
 				}
+				if (!pStmtFetch->next()){
+					break;
+				}
+			} // values
+			return (true);
+		}// get_variables_values
+		bool get_variable_values_pair_not_null_count(int nVarId,int &nCount) {
+			assert(this->is_valid());
+			nCount = 0;
+			PStatement stmt = this->find_statement(SQL_VALUES_BY_VARIABLE_NOT_NULL_COUNT);
+			if (!stmt->is_valid()) {
+				return false;
 			}
-		}// read_dataset
+			stmt->reset();
+			stmt->set_parameter(1, nVarId);
+			if (!stmt->exec()) {
+				return (false);
+			}
+			if (!stmt->has_values()) {
+				return (false);
+			}
+			DbValue v;
+			if (stmt->col_value(0, v)) {
+				nCount = v.int_value();
+			}
+			return (true);
+		} // get_variable_values_pair_not_null_count
 		template<class ALLOCVEC>
 		bool get_all_datasets(std::vector<DatasetType, ALLOCVEC> &oVec) {
 			assert(this->is_valid());
@@ -1005,6 +1140,7 @@ namespace intrasqlite {
 		static const char *SQL_FIND_INDIVS_BY_DATASET_AND_STATUS_COUNT;
 		static const char *SQL_FIND_INDIVS_BY_DATASET_AND_STATUS;
 		static const char *SQL_FIND_DATASET_INDIVS;
+		static const char *SQL_FIND_DATASET_INDIVS_PAGED;
 		static const char *SQL_INDIV_BY_DATASET_AND_SIGLE;
 		static const char *SQL_FIND_INDIV_BY_ID;
 		static const char *SQL_INSERT_INDIV;
@@ -1018,6 +1154,7 @@ namespace intrasqlite {
 		static const char *SQL_VALUES_BY_VARIABLE_INDIV;
 		static const char *SQL_VALUES_BY_VARIABLE_NOT_NULL;
 		static const char *SQL_VALUES_BY_VARIABLE_NOT_NULL_COUNT;
+		static const char *SQL_VALUES_PAIR_BY_VARIABLE_NOT_NULL;
 		static const char *SQL_INSERT_VALUE;
 		static const char *SQL_UPDATE_VALUE;
 		static const char *SQL_REMOVE_VALUE;
@@ -1031,8 +1168,7 @@ namespace intrasqlite {
 		static const char *SQL_GET_DATASET_INDIV_IDS;
 	}
 	;
-	///////////////////////////////////////
-#include "sqltext.h"
+
 	///////////////////////////////////
 	template<class TSTRING>
 	template<class IFSTREAM>
@@ -2015,6 +2151,9 @@ namespace intrasqlite {
 		}
 		return (true);
 	} // get_dataset_indivs_count
-	///////////////////////////
+
+	///////////////////////////////////////
+#include "sqltext.h"
+	////////////////////////
 } /* namespace intrasqlite */
 #endif /* STATDATAMANAGER_H_ */
