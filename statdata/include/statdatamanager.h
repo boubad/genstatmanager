@@ -352,6 +352,142 @@ namespace intrasqlite {
 		StatDataManager();
 		virtual ~StatDataManager();
 	public:
+		template <class ALLOCINT, class COMPARE, class ALLOCPAIR, class ALLOCMAP>
+		bool get_common_values_not_null(const std::set<int,COMPARE,ALLOCINT> &oVars,
+			std::map<int,std::map<int,boost::any,COMPARE,ALLOCPAIR>,COMPARE,ALLOCMAP> &oRes){
+				oRes.clear();
+				auto iend = oVars.end();
+				const int taken = 128;
+				for (auto it = oVars.begin(); it != iend; ++it){
+					int nVarId = *it;
+					if (nVarId == 0){
+						continue;
+					}
+					std::map<int,boost::any,COMPARE,ALLOCPAIR> oMap;
+					int nCount = 0;
+					bool bRet = this->get_variable_values_pair_not_null_count(nVarId,nCount);
+					if (!bRet){
+						return (false);
+					}
+					if (nCount < 1){
+						continue;
+					}
+					int skip = 0;
+					while (skip < nCount){
+						std::map<int,boost::any,COMPARE,ALLOCPAIR> xMap;
+						bRet = this->get_variable_values_pair_not_null(nVarId,xMap,skip,taken);
+						if (!bRet){
+							return (false);
+						}
+						auto jend = xMap.end();
+						for (auto jt = xMap.begin(); jt != jend; ++jt){
+							int nId = (*jt).first;
+							boost::any v = (*jt).second;
+							oMap[nId] = v;
+						}// jt
+						skip += taken;
+					}// skip
+					if (oMap.empty()){
+						continue;
+					}
+					auto kend = oMap.end();
+					if (oRes.empty()){
+						for (auto kt = oMap.begin(); kt != kend; ++kt){
+							int nIndivId = (*kt).first;
+							boost::any v = (*kt).second;
+							std::map<int,boost::any,COMPARE,ALLOCPAIR> m;
+							m[nVarId] = v;
+							oRes[nIndivId] = m;
+						}// kt
+					} else {
+						std::set<int,COMPARE,ALLOCINT> oDelSet;
+						auto mend = oRes.end();
+						for (auto mt = oRes.begin(); mt != mend; ++mt){
+							int nIndivId = (*mt).first;
+							if (oMap.find(nIndivId) == kend){
+								oDelSet.insert(nIndivId);
+							} else {
+								boost::any v = oMap[nIndivId];
+								std::map<int,boost::any,COMPARE,ALLOCPAIR>  &m = oRes[nIndivId];
+								m[nVarId] = v;
+							}
+						}// mt
+						auto hend = oDelSet.end();
+						for (auto ht = oDelSet.begin(); ht != hend; ++ht){
+							int nIndivId = *ht;
+							auto kx = oRes.find(nIndivId);
+							if (kx != oRes.end()){
+								oRes.erase(kx);
+							}
+						}// ht
+					}
+				}// it
+				return (true);
+		}// get_common_values
+		template <class ALLOCINT,class ALLOCANY, class ALLOCANYVECTOR>
+		bool get_common_values(const std::vector<int,ALLOCINT> &oVars, std::vector<int,ALLOCINT> &oCols,std::vector<int,ALLOCINT> &oInds,
+			std::vector<std::vector<boost::any,ALLOCANY>,ALLOCANYVECTOR> &oVals) {
+				typedef std::map<int,boost::any> AnyMap;
+				typedef std::map<int,AnyMap> AnyArray;
+				typedef std::set<int> IntSet;
+				IntSet oSetVars;
+				//
+				oCols.clear();
+				oInds.clear();
+				oVals.clear();
+				//
+				for (auto it = oVars.begin(); it != oVars.end(); ++it){
+					int nVarId = *it;
+					if (nVarId > 0){
+						oSetVars.insert(nVarId);
+					}
+				}// it
+				if (oSetVars.empty()){
+					return (false);
+				}
+				AnyArray oAr;
+				if (!this->get_common_values_not_null(oSetVars,oAr)){
+					return (false);
+				}
+				size_t nInds = oAr.size();
+				if (nInds < 1){
+					return (true);
+				}
+				oSetVars.clear();
+				auto iFirst = oAr.begin();
+				auto mfirst = (*iFirst).second;
+				size_t nVars = 0;
+				for (auto lt = mfirst.begin(); lt != mfirst.end(); ++lt){
+					++nVars;
+				}
+				oCols.resize(nVars);
+				size_t icur = 0;
+				for (auto it = mfirst.begin(); it != mfirst.end(); ++it){
+					int nVarId = (*it).first;
+					oCols[icur++] = nVarId;
+				}// it
+				oInds.resize(nInds);
+				oVals.resize(nInds);
+				icur = 0;
+				auto iend = oAr.end();
+				for (auto it = oAr.begin(); it != iend; ++it){
+					std::vector<boost::any,ALLOCANY> vcur(nVars);
+					int nIndivId = (*it).first;
+					oInds[icur] = nIndivId;
+					AnyMap &oMap = (*it).second;
+					auto kend = oMap.end();
+					for (size_t i = 0; i < nVars; ++i){
+						int nVarId = oCols[i];
+						auto kt = oMap.find(nVarId);
+						if (kt != kend){
+							boost::any v = (*kt).second;
+							vcur[i] = v;
+						}
+					}// i
+					oVals[icur++] = vcur;
+				}// it
+				return (true);
+		}// get_common_values
 		template<class IFSTREAM>
 		bool process_data(IFSTREAM &inFile, const StringType &datasetSigle,
 			DatasetType &oSet, const Char & delim, const StringType & na);
@@ -1051,8 +1187,8 @@ namespace intrasqlite {
 				} // values
 				return (true);
 		} // get_dataset_variables
-		template <class ALLOCPAIR>
-		bool get_variable_values_pair_not_null(int nVarId,std::map<int,boost::any,std::less<int>,ALLOCPAIR> &oMap, int skip, int taken){
+		template <class COMPARE, class ALLOCPAIR>
+		bool get_variable_values_pair_not_null(int nVarId,std::map<int,boost::any,COMPARE,ALLOCPAIR> &oMap, int skip, int taken){
 			oMap.clear();
 			if ((skip < 0) || (taken < 1)) {
 				return (false);

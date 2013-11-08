@@ -319,6 +319,101 @@ namespace StatUnitTests
 			bRet = pMan->remove_dataset(cur);
 			Assert::IsTrue(bRet);
 		}// TestRemoveIndivs
+		TEST_METHOD(TestGetCommonValues)
+		{
+			typedef std::map<int,boost::any> AnyMap;
+			typedef std::map<int,AnyMap> AnyArray;
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			std::vector<VariableType> oVec;
+			bool bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			Assert::IsTrue(bRet);
+			const size_t n = oVec.size();
+			Assert::IsTrue(n > 0);
+			std::set<int> oVars;
+			size_t nMin = 0;
+			for (size_t i = 0; i < n; ++i){
+				VariableType &var = oVec[i];
+				int nVarId = var.id();
+				Assert::IsTrue(nVarId > 0);
+				int nCount = 0;
+				bRet = pMan->get_variable_values_pair_not_null_count(nVarId,nCount);
+				Assert::IsTrue(bRet);
+				if (nCount > 0){
+					oVars.insert(nVarId);
+					if (nMin < 1){
+						nMin = nCount;
+					} else if (nMin > (size_t)nCount){
+						nMin = (size_t)nCount;
+					}
+				}// nCount
+			}// i
+			if ((nMin > 0) && (!oVars.empty())) {
+				AnyArray oAr;
+				bRet = pMan->get_common_values_not_null(oVars,oAr);
+				Assert::IsTrue(bRet);
+				size_t nc = oAr.size();
+				Assert::IsTrue(nc <= nMin);
+				std::set<int> xVars;
+				for (auto it = oAr.begin(); it != oAr.end(); ++it){
+					auto m = (*it).second;
+					if (xVars.empty()){
+						for (auto jt = m.begin(); jt != m.end(); ++jt){
+							int nVarId = (*jt).first;
+							xVars.insert(nVarId);
+						}// jt
+					} else {
+						for (auto jt = xVars.begin(); jt != xVars.end(); ++jt){
+							int nVarId = *jt;
+							bRet = m.find(nVarId) == m.end();
+							Assert::IsFalse(bRet);
+							boost::any & v = m[nVarId];
+							bRet = v.empty();
+							Assert::IsFalse(bRet);
+						}// jt
+					}
+				}// it
+			}// oVars
+		}//TestGetCommonValues
+		TEST_METHOD(TestGetCommonValuesVectors)
+		{
+			typedef std::vector<boost::any> AnyVector;
+			typedef std::vector<AnyVector> AnyArray;
+			typedef std::vector<int> IntVector;
+			//
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			//
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			std::vector<VariableType> oVec;
+			bool bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			Assert::IsTrue(bRet);
+			const size_t n = oVec.size();
+			Assert::IsTrue(n > 0);
+			IntVector oVars;
+			for (size_t i = 0; i < n; ++i){
+				VariableType &var = oVec[i];
+				int nVarId = var.id();
+				Assert::IsTrue(nVarId > 0);
+				int nCount = 0;
+				bRet = pMan->get_variable_values_pair_not_null_count(nVarId,nCount);
+				Assert::IsTrue(bRet);
+				if (nCount > 5){
+					oVars.push_back(nVarId);
+				}// nCount
+			}// i
+			if (!oVars.empty()){
+				IntVector oCols, oInds;
+				AnyArray oAr;
+				bRet = pMan->get_common_values(oVars,oCols,oInds,oAr);
+				Assert::IsTrue(bRet);
+			}// oVars
+		}//TestGetCommonValuesVectors
 	};// classStatDataManagerTest
 	std::unique_ptr<PredStatDataManagerType> StatDataManagerTest::m_man;
 	const int StatDataManagerTest::NB_VARS = 29;
