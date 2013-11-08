@@ -10,6 +10,10 @@ namespace StatUnitTests
 	{
 	private:
 		static std::unique_ptr<PredStatDataManagerType> m_man;
+		static const int NB_VARS;
+		static const int NB_INDIVS;
+	private:
+		int m_datasetid;
 	public:
 		TEST_CLASS_INITIALIZE(ClassInitialize)
 		{
@@ -29,6 +33,47 @@ namespace StatUnitTests
 			m_man.reset();
 			Logger::WriteMessage("");
 		}
+		TEST_METHOD_INITIALIZE(Setup) 
+		{
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			DatasetType oSet;
+			std::string sigle(TEST_DATABASE_SIGLE);
+			bool bRet = pMan->get_dataset_by_sigle(sigle,oSet);
+			if ((!bRet) || (oSet.id() == 0)){
+				oSet.sigle(sigle);
+				oSet.name(sigle);
+				oSet.description(sigle);
+				bRet = pMan->insert_dataset(oSet);
+				Assert::IsTrue(bRet);
+				bRet = pMan->get_dataset_by_sigle(sigle,oSet);
+			}
+			Assert::IsTrue(bRet);
+			m_datasetid = oSet.id();
+			Assert::IsTrue(m_datasetid != 0);
+			const int nDatasetId = m_datasetid;
+			std::vector<VariableType> oVec;
+			bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			Assert::IsTrue(bRet);
+			const size_t nVars = oVec.size();
+			int nIndivs = 0;
+			bRet = pMan->get_dataset_indivs_count(nDatasetId,nIndivs);
+			Assert::IsTrue(bRet);
+			if ((nVars < NB_VARS) || (nIndivs < NB_INDIVS)){
+				std::ifstream inFile(TEST_IMPORT_FILENAME);
+				Assert::IsTrue(inFile.is_open());
+				std::string na(TEST_NA);
+				std::string sigle(TEST_DATABASE_SIGLE);
+				char delim(TEST_DELIM);
+				bRet = pMan->process_data(inFile, sigle,delim,na);
+				Assert::IsTrue(bRet);
+			}
+		} // SetUp
+		TEST_METHOD_CLEANUP(TearDown) 
+		{
+			// test method cleanup  code
+		}// TearDown
 		TEST_METHOD(TestGetAllDatasets)
 		{
 			PredStatDataManagerType *pMan = m_man.get();
@@ -51,14 +96,10 @@ namespace StatUnitTests
 			PredStatDataManagerType *pMan = m_man.get();
 			Assert::IsNotNull(pMan);
 			Assert::IsTrue(pMan->is_valid());
-			DatasetType oSet;
-			String sigle(TEST_DATABASE_SIGLE);
-			bool bRet = pMan->get_dataset_by_sigle(sigle,oSet);
-			Assert::IsTrue(bRet);
-			int nDatasetId = oSet.id();
+			int nDatasetId = m_datasetid;
 			Assert::IsTrue(nDatasetId > 0);
 			std::vector<VariableType> oVec;
-			bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			bool bRet = pMan->get_dataset_variables(nDatasetId,oVec);
 			Assert::IsTrue(bRet);
 			const size_t n = oVec.size();
 			for (size_t i = 0; i < n; ++i){
@@ -86,14 +127,10 @@ namespace StatUnitTests
 			PredStatDataManagerType *pMan = m_man.get();
 			Assert::IsNotNull(pMan);
 			Assert::IsTrue(pMan->is_valid());
-			DatasetType oSet;
-			String sigle(TEST_DATABASE_SIGLE);
-			bool bRet = pMan->get_dataset_by_sigle(sigle,oSet);
-			Assert::IsTrue(bRet);
-			int nDatasetId = oSet.id();
+			int nDatasetId = m_datasetid;
 			Assert::IsTrue(nDatasetId > 0);
 			int nCount = 0;
-			bRet = pMan->get_dataset_indivs_count(nDatasetId,nCount);
+			bool bRet = pMan->get_dataset_indivs_count(nDatasetId,nCount);
 			Assert::IsTrue(bRet);
 			Assert::IsTrue(nCount > 0);
 			const int taken = 100;
@@ -144,14 +181,10 @@ namespace StatUnitTests
 			PredStatDataManagerType *pMan = m_man.get();
 			Assert::IsNotNull(pMan);
 			Assert::IsTrue(pMan->is_valid());
-			DatasetType oSet;
-			String sigle(TEST_DATABASE_SIGLE);
-			bool bRet = pMan->get_dataset_by_sigle(sigle,oSet);
-			Assert::IsTrue(bRet);
-			int nDatasetId = oSet.id();
+			int nDatasetId = m_datasetid;
 			Assert::IsTrue(nDatasetId > 0);
 			std::vector<VariableType> oVec;
-			bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			bool bRet = pMan->get_dataset_variables(nDatasetId,oVec);
 			Assert::IsTrue(bRet);
 			const size_t n = oVec.size();
 			const int taken = 100;
@@ -186,14 +219,10 @@ namespace StatUnitTests
 			PredStatDataManagerType *pMan = m_man.get();
 			Assert::IsNotNull(pMan);
 			Assert::IsTrue(pMan->is_valid());
-			DatasetType oSet;
-			String sigle(TEST_DATABASE_SIGLE);
-			bool bRet = pMan->get_dataset_by_sigle(sigle,oSet);
-			Assert::IsTrue(bRet);
-			int nDatasetId = oSet.id();
+			int nDatasetId = m_datasetid;
 			Assert::IsTrue(nDatasetId > 0);
 			int nCount = 0;
-			bRet = pMan->get_dataset_values_count(nDatasetId, nCount);
+			bool bRet = pMan->get_dataset_values_count(nDatasetId, nCount);
 			Assert::IsTrue(bRet);
 			const int taken = 100;
 			int skip = 0;
@@ -211,6 +240,87 @@ namespace StatUnitTests
 				skip += taken;
 			}// skip
 		}// TestGetDatasetValues
+		TEST_METHOD(TestRemoveValues)
+		{
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			int nCount = 0;
+			bool bRet = pMan->get_dataset_values_count(nDatasetId, nCount);
+			Assert::IsTrue(bRet);
+			const int taken = 100;
+			int skip = 0;
+			std::vector<ValueType> oVec;
+			bRet = pMan->get_dataset_values(nDatasetId,oVec,skip,taken);
+			Assert::IsTrue(bRet);
+			const size_t n = oVec.size();
+			Assert::IsTrue(n > 0);
+			bRet = pMan->remove_values(oVec);
+			Assert::IsTrue(bRet);
+		}// TestRemoveValues
+		TEST_METHOD(TestRemoveVariables)
+		{
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			std::vector<VariableType> oVec;
+			bool bRet = pMan->get_dataset_variables(nDatasetId,oVec);
+			Assert::IsTrue(bRet);
+			const size_t n = oVec.size();
+			for (size_t i = 0; i < n; ++i){
+				VariableType v = oVec[i];
+				std::vector<VariableType> vv; 
+				vv.push_back(v);
+				bRet = pMan->remove_variables(vv);
+				Assert::IsTrue(bRet);
+			}// i
+
+		}// TestRemoveVariables
+		TEST_METHOD(TestRemoveIndivs)
+		{
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			int nCount1 = 0;
+			bool bRet = pMan->get_dataset_indivs_count(nDatasetId,nCount1);
+			Assert::IsTrue(bRet);
+			Assert::IsTrue(nCount1 > 0);
+			const int taken = 100;
+			int skip = 0;
+			std::vector<IndivType> oVec;
+			bRet = pMan->get_dataset_indivs(nDatasetId,oVec,skip,taken);
+			Assert::IsTrue(bRet);
+			const size_t n = oVec.size();
+			Assert::IsTrue( n > 0);
+			bRet = pMan->remove_indivs(oVec);
+			Assert::IsTrue(bRet);
+			int nCount2 = 0;
+			bRet = pMan->get_dataset_indivs_count(nDatasetId,nCount2);
+			Assert::IsTrue(bRet);
+			int expected = nCount1 - n;
+			Assert::AreEqual(expected, nCount2);
+		}// TestRemoveIndivs
+		TEST_METHOD(TestRemoveDataset)
+		{
+			PredStatDataManagerType *pMan = m_man.get();
+			Assert::IsNotNull(pMan);
+			Assert::IsTrue(pMan->is_valid());
+			int nDatasetId = m_datasetid;
+			Assert::IsTrue(nDatasetId > 0);
+			DatasetType cur;
+			bool bRet = pMan->get_dataset_by_id(nDatasetId,cur);
+			Assert::IsTrue(bRet);
+			bRet = pMan->remove_dataset(cur);
+			Assert::IsTrue(bRet);
+		}// TestRemoveIndivs
 	};// classStatDataManagerTest
 	std::unique_ptr<PredStatDataManagerType> StatDataManagerTest::m_man;
+	const int StatDataManagerTest::NB_VARS = 29;
+	const int StatDataManagerTest::NB_INDIVS = 140;
 }// namespace

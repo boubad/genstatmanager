@@ -636,31 +636,48 @@ namespace intrasqlite {
 				return (true);
 		} // get_dataset_by_status_values
 		template<class ALLOCIND>
-		bool remove_indivs(const std::vector<IndivType, ALLOCIND> &oVec) {
+		bool remove_indivs(const std::vector<IndivType, ALLOCIND> &oVec, bool bTrans = true) {
 			assert(this->is_valid());
-			if (!this->begin_transaction()) {
-				return (false);
+			if (bTrans){
+				if (!this->begin_transaction()) {
+					return (false);
+				}
 			}
 			PStatement stmt = this->find_statement(SQL_REMOVE_INDIV);
-			if (!stmt->is_valid()) {
-				this->rollback_transaction();
+			PStatement stmtDelete = this->find_statement(SQL_REMOVE_INDIV_VALUES);
+			if ( (!stmt->is_valid())  || (!stmtDelete->is_valid())) {
+				if (bTrans){
+					this->rollback_transaction();
+				}
 				return (false);
 			}
 			for (auto it = oVec.begin(); it != oVec.end(); ++it) {
 				const IndivType &cur = *it;
 				int nId = cur.id();
 				if (nId != 0) {
+					stmtDelete->reset();
+					stmtDelete->set_parameter(1,nId);
+					if (!stmtDelete->exec()){
+						if (bTrans){
+							this->rollback_transaction();
+						}
+						return (false);
+					}
 					stmt->reset();
 					stmt->set_parameter(1, nId);
 					if (!stmt->exec()) {
-						this->rollback_transaction();
+						if (bTrans){
+							this->rollback_transaction();
+						}
 						return (false);
 					}
 				}
 			} // it
-			if (!this->commit_transaction()) {
-				this->rollback_transaction();
-				return (false);
+			if (bTrans){
+				if (!this->commit_transaction()) {
+					this->rollback_transaction();
+					return (false);
+				}
 			}
 			return (true);
 		} // remove_indivs
@@ -852,31 +869,48 @@ namespace intrasqlite {
 			return (true);
 		} // get_dataset_indivs_ids
 		template<class ALLOCVAR>
-		bool remove_variables(const std::vector<VariableType, ALLOCVAR> &oVec) {
+		bool remove_variables(const std::vector<VariableType, ALLOCVAR> &oVec,bool bTrans = true) {
 			assert(this->is_valid());
-			if (!this->begin_transaction()) {
-				return (false);
+			if (bTrans){
+				if (!this->begin_transaction()) {
+					return (false);
+				}
 			}
 			PStatement stmt = this->find_statement(SQL_REMOVE_VARIABLE);
-			if (!stmt->is_valid()) {
-				this->rollback_transaction();
+			PStatement stmtDelete = this->find_statement(SQL_REMOVE_VARIABLE_VALUES);
+			if ((!stmt->is_valid()) || (!stmtDelete->is_valid())) {
+				if (bTrans){
+					this->rollback_transaction();
+				}
 				return (false);
 			}
 			for (auto it = oVec.begin(); it != oVec.end(); ++it) {
 				const VariableType &cur = *it;
 				int nId = cur.id();
 				if (nId != 0) {
+					stmtDelete->reset();
+					stmtDelete->set_parameter(1,nId);
+					if (!stmtDelete->exec()){
+						if (bTrans){
+							this->rollback_transaction();
+						}
+						return (false);
+					}
 					stmt->reset();
 					stmt->set_parameter(1, nId);
 					if (!stmt->exec()) {
-						this->rollback_transaction();
+						if (bTrans){
+							this->rollback_transaction();
+						}
 						return (false);
 					}
 				}
 			} // it
-			if (!this->commit_transaction()) {
-				this->rollback_transaction();
-				return (false);
+			if (bTrans){
+				if (!this->commit_transaction()) {
+					this->rollback_transaction();
+					return (false);
+				}
 			}
 			return (true);
 		} // remove_variables
@@ -1134,6 +1168,7 @@ namespace intrasqlite {
 		static const char *SQL_INSERT_VARIABLE;
 		static const char *SQL_UPDATE_VARIABLE;
 		static const char *SQL_REMOVE_VARIABLE;
+		static const char *SQL_REMOVE_DATASET_VARIABLES;
 		////////////////////////////////////////////
 		static const char *SQL_FIND_VARIABLE_TYPE;
 		static const char *SQL_FIND_DATASET_INDIVS_COUNT;
@@ -1146,6 +1181,7 @@ namespace intrasqlite {
 		static const char *SQL_INSERT_INDIV;
 		static const char *SQL_UPDATE_INDIV;
 		static const char *SQL_REMOVE_INDIV;
+		static const char *SQL_REMOVE_DATASET_INDIVS;
 		///////////////////////////////////////
 		static const char *SQL_FIND_DATASET_VALUES_COUNT;
 		static const char *SQL_FIND_DATASET_VALUES;
@@ -1158,6 +1194,8 @@ namespace intrasqlite {
 		static const char *SQL_INSERT_VALUE;
 		static const char *SQL_UPDATE_VALUE;
 		static const char *SQL_REMOVE_VALUE;
+		static const char *SQL_REMOVE_VARIABLE_VALUES;
+		static const char *SQL_REMOVE_INDIV_VALUES;
 		static const char *SQL_VALUE_BY_ID;
 		/////////////////////////////////////////
 		static const char *SQL_CREATE_VIEW_VALUES;
@@ -1469,26 +1507,52 @@ namespace intrasqlite {
 	bool StatDataManager<TSTRING>::remove_dataset(
 		const  typename  StatDataManager<TSTRING>::DatasetType &cur) {
 			assert(this->is_valid());
-			if (!cur.is_removeable()) {
+			int nDatasetId = cur.id();
+			if (nDatasetId == 0){
 				return (false);
 			}
 			if (!this->begin_transaction()) {
 				return (false);
 			}
+			PStatement pStmtFindVars = this->find_statement(SQL_FIND_DATASET_VARIABLES_IDS);
+			PStatement pStmtDeleteVals = this->find_statement(SQL_REMOVE_VARIABLE_VALUES);
+			PStatement pStmtDeleteVar = this->find_statement(SQL_REMOVE_VARIABLE);
+			PStatement pStmtRemoveIndivs = this->find_statement(SQL_REMOVE_DATASET_INDIVS);
 			PStatement stmt = this->find_statement(SQL_REMOVE_DATASET);
-			if (!stmt->is_valid()) {
-				this->rollback_transaction();
-				return (false);
+
+			if ((!stmt->is_valid()) || (!pStmtFindVars->is_valid()) || (!pStmtDeleteVals->is_valid()) ||
+				(!pStmtDeleteVar->is_valid()) || (!pStmtRemoveIndivs->is_valid()) ){
+					this->rollback_transaction();
+					return (false);
 			}
+			pStmtFindVars->reset();
+			pStmtFindVars->set_parameter(1,nDatasetId);
+			if (pStmtFindVars->exec()){
+				while (pStmtFindVars->has_values()){
+					DbValue v;
+					int nVarId = 0;
+					if (stmt->col_value(0, v)) {
+						nVarId = v.int_value();
+					}
+					if (nVarId != 0){
+						pStmtDeleteVals->reset();
+						pStmtDeleteVals->set_parameter(1,nVarId);
+						pStmtDeleteVals->exec();
+						pStmtDeleteVar->reset();
+						pStmtDeleteVar->set_parameter(1,nVarId);
+						pStmtDeleteVar->exec();
+					}// nVarId
+					if (!pStmtFindVars->next()){
+						break;
+					}
+				} // var
+			}// vars
+			pStmtRemoveIndivs->reset();
+			pStmtRemoveIndivs->set_parameter(1,nDatasetId);
+			pStmtRemoveIndivs->exec();
 			stmt->reset();
-			if (!stmt->set_parameter(1, cur.id())) {
-				this->rollback_transaction();
-				return (false);
-			}
-			if (!stmt->exec()) {
-				this->rollback_transaction();
-				return (false);
-			}
+			stmt->set_parameter(1, nDatasetId);
+			stmt->exec();
 			if (!this->commit_transaction()) {
 				this->rollback_transaction();
 				return (false);

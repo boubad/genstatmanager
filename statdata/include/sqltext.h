@@ -85,6 +85,9 @@ const char *StatDataManager<TSTRING>::SQL_UPDATE_VARIABLE =
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_REMOVE_VARIABLE =
 		"DELETE FROM dbvariable WHERE variableid = ?1";
+template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_REMOVE_DATASET_VARIABLES =
+		"DELETE FROM dbvariable WHERE datasetid = ?1";
 ////////////////////////////////////////////////////////
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_CREATE_INDIV =
@@ -131,7 +134,10 @@ const char *StatDataManager<TSTRING>::SQL_UPDATE_INDIV =
 				" sigle = ?1, nom = ?2, description = ?3, status = ?4 WHERE individ = ?5";
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_REMOVE_INDIV =
-		"REMOVE FROM dbindiv WHERE individ = ?1";
+		"DELETE FROM dbindiv WHERE individ = ?1";
+template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_REMOVE_DATASET_INDIVS =
+		"DELETE FROM dbindiv WHERE datasetid = ?1";
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_FIND_INDIVS_BY_DATASET_AND_STATUS_COUNT =
 		"SELECT COUNT(*) FROM dbindiv WHERE datasetid = ?1 AND UPPER(LTRIM(RTRIM(status))) = ?2";
@@ -219,6 +225,12 @@ const char *StatDataManager<TSTRING>::SQL_UPDATE_VALUE =
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_REMOVE_VALUE =
 		"DELETE from dbvalue WHERE valueid = ?1";
+template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_REMOVE_VARIABLE_VALUES =
+		"DELETE from dbvalue WHERE variableid = ?1";
+template<class TSTRING>
+const char *StatDataManager<TSTRING>::SQL_REMOVE_INDIV_VALUES =
+		"DELETE from dbvalue WHERE individ = ?1";
 //////////////////////////////////////////////////////
 template<class TSTRING>
 const char *StatDataManager<TSTRING>::SQL_CREATE_VIEW_VALUES =
