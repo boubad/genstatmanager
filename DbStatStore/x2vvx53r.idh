@@ -1,0 +1,563 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DbStatStore
+{
+    public class StatDataStore
+    {
+        public StatDataStore()
+        {
+
+        }
+        protected statdatastoreEntities getContext()
+        {
+            return new statdatastoreEntities();
+        }
+        public Tuple<IEnumerable<DbDataset>, Exception> GetAllDataSets()
+        {
+            List<DbDataset> oRet = null;
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                var q = from x in ctx.DbDatasets orderby x.Sigle ascending select x;
+                oRet = new List<DbDataset>();
+                foreach (var p in q)
+                {
+                    oRet.Add(p);
+                }// p
+            }
+            catch (Exception ex)
+            {
+                ex = err;
+            }
+            return new Tuple<IEnumerable<DbDataset>, Exception>(oRet, err);
+        }// getAllDataSets
+        protected DbDataset  FindDatasetById(statdatastoreEntities ctx ,int nId)
+        {
+                return ctx.DbDatasets.Find(nId);
+        }// FindDatasetById
+        public Tuple<DbDataset, Exception> FindDatasetById(int nId)
+        {
+            DbDataset pRet = null;
+            if (nId == 0)
+            {
+                return new Tuple<DbDataset, Exception>(pRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.FindDatasetById(ctx, nId);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbDataset, Exception>(pRet, err);
+        }// FindDatasetById
+        protected DbDataset FindDatasetBySigle(statdatastoreEntities ctx, String sigle)
+        {
+            DbDataset pRet = null;
+            if (String.IsNullOrEmpty(sigle))
+            {
+                return null;
+            }
+            String ss = sigle.Trim().ToUpper();
+            var q = from x in ctx.DbDatasets where (x.Sigle.Trim().ToUpper() == ss) select x;
+            if (q.Count() > 0)
+            {
+                pRet = q.First();
+            }
+            return pRet;
+        }// FindDatasetBySigle
+        public Tuple<DbDataset, Exception> FindDatasetBySigle(String sigle)
+        {
+            DbDataset pRet = null;
+            if (String.IsNullOrEmpty(sigle))
+            {
+                return new Tuple<DbDataset, Exception>(pRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.FindDatasetBySigle(ctx, sigle);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbDataset, Exception>(pRet, err);
+        }// FindDatasetBySigle
+        public Tuple<DbDataset, Exception> FindDataset(DbDataset pSet)
+        {
+            DbDataset pRet = null;
+            Exception err = null;
+            if (pSet == null)
+            {
+                return new Tuple<DbDataset, Exception>(pRet, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                int nId = pSet.Id;
+                if (nId != 0)
+                {
+                    pRet = this.FindDatasetById(ctx, nId);
+                    if (pRet != null)
+                    {
+                        return new Tuple<DbDataset, Exception>(pRet, err);
+                    }
+                }
+                String s = pSet.Sigle;
+                if (pRet == null)
+                {
+                    if (String.IsNullOrEmpty(s))
+                    {
+                        return new Tuple<DbDataset, Exception>(pRet, new ArgumentException());
+                    }
+                }
+                pRet = this.FindDatasetBySigle(ctx, s);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbDataset, Exception>(pRet, err);
+        }// FindDatasetBySigle
+        public Tuple<DbDataset, Exception> MaintainsDataset(DbDataset pSet)
+        {
+            DbDataset pRet = null;
+            if (pSet == null)
+            {
+                return new Tuple<DbDataset, Exception>(pRet, new ArgumentNullException());
+            }
+            String sigle = pSet.Sigle;
+            if (String.IsNullOrEmpty(sigle))
+            {
+                return new Tuple<DbDataset, Exception>(pRet, new ArgumentException());
+            }
+            String sSigle = sigle.Trim();
+            if (sSigle.Length > 31)
+            {
+                sSigle = sSigle.Substring(0, 31).Trim();
+            }
+            Exception err = null;
+            String name = pSet.Name;
+            if (!String.IsNullOrEmpty(name))
+            {
+                if (name.Length > 63)
+                {
+                    name = name.Substring(0, 63).Trim();
+                }
+            }
+            String desc = pSet.Description;
+            if (!String.IsNullOrEmpty(desc))
+            {
+                if (desc.Length > 255)
+                {
+                    desc = desc.Substring(0, 255).Trim();
+                }
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                int nId = pSet.Id;
+                if (nId != 0)
+                {
+                    pRet = this.FindDatasetById(ctx, nId);
+                }
+                if (pRet == null)
+                {
+                    pRet = this.FindDatasetBySigle(ctx, sSigle);
+                }
+                if (pRet != null)
+                {
+                    pRet.Sigle = sSigle;
+                    pRet.Version = pRet.Version + 1;
+                    pRet.Name = name;
+                    pRet.Description = desc;
+                    ctx.SaveChanges();
+                }
+                else
+                {
+                    pRet = new DbDataset();
+                    pRet.Version = 1;
+                    pRet.Sigle = sSigle;
+                    pRet.Name = name;
+                    pRet.Description = desc;
+                    ctx.DbDatasets.Add(pRet);
+                    ctx.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbDataset, Exception>(pRet, err);
+        }// MaintainsDataset
+        public Tuple<bool, Exception> RemoveDataset(DbDataset pSet)
+        {
+            bool bRet = false;
+            Exception err = null;
+            if (pSet == null)
+            {
+                return new Tuple<bool, Exception>(bRet, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                DbDataset pRet = null;
+                int nId = pSet.Id;
+                if (nId != 0)
+                {
+                    pRet = this.FindDatasetById(ctx, nId);
+                }
+                String s = pSet.Sigle;
+                if (pRet == null)
+                {
+                    String sigle = pSet.Sigle;
+                    pRet = this.FindDatasetBySigle(ctx, sigle);
+                }
+                if (pRet == null)
+                {
+                    return new Tuple<bool, Exception>(bRet, new ArgumentException());
+                }
+                this.removeDataset(ctx, pRet);
+                ctx.SaveChanges();
+                bRet = true;
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<bool, Exception>(bRet, err);
+        }// FindDatasetBySigle
+        public Tuple<IEnumerable<DbVariable>, Exception> GetDatasetVariables(DbDataset pSet)
+        {
+            List<DbVariable> oRet = null;
+            if (pSet == null)
+            {
+                return new Tuple<IEnumerable<DbVariable>, Exception>(oRet, new ArgumentNullException());
+            }
+            Exception err = null;
+            var rr = this.FindDataset(pSet);
+            DbDataset xSet = rr.Item1;
+            if (xSet == null)
+            {
+                return new Tuple<IEnumerable<DbVariable>, Exception>(oRet, new ArgumentException());
+            }
+            int nId = xSet.Id;
+            if (nId == 0)
+            {
+                return new Tuple<IEnumerable<DbVariable>, Exception>(oRet, new ArgumentException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                var q = from x in ctx.DbVariables where (x.DatasetId == nId) orderby x.Sigle ascending select x;
+                oRet = new List<DbVariable>();
+                foreach (var p in q)
+                {
+                    oRet.Add(p);
+                }
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<IEnumerable<DbVariable>, Exception>(oRet, err);
+        }//GetDatasetVariables 
+        protected DbVariable  FindVariableById(statdatastoreEntities ctx ,int nVarId)
+        {
+             return ctx.DbVariables.Find(nVarId);
+        }// FindVariableById
+        protected DbVariable FindVariableByDatasetAndSigle(statdatastoreEntities ctx, int nDatasetId, String sigle)
+        {
+            DbVariable pRet = null;
+            if ((nDatasetId != 0) && (!String.IsNullOrEmpty(sigle)))
+            {
+                String ss = sigle.Trim().ToUpper();
+                var q = from x in ctx.DbVariables where (x.DatasetId == nDatasetId) && (x.Sigle.Trim().ToUpper() == ss) select x;
+                if (q.Count() > 0)
+                {
+                    pRet = q.First();
+                }
+            }
+            return pRet;
+        }// FindVariableById
+        public Tuple<DbVariable, Exception> FindVariableById(int nVarId)
+        {
+            DbVariable pRet = null;
+            if (nVarId == 0)
+            {
+                return new Tuple<DbVariable, Exception>(pRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.FindVariableById(ctx, nVarId);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbVariable, Exception>(pRet, err);
+        }// FindVariableById
+        public Tuple<DbVariable, Exception> FindVariableByDatasetAndSigle(int nDatasetId, String sigle)
+        {
+            DbVariable pRet = null;
+            if ((nDatasetId == 0) || String.IsNullOrEmpty(sigle))
+            {
+                return new Tuple<DbVariable, Exception>(pRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.FindVariableByDatasetAndSigle(ctx, nDatasetId, sigle);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbVariable, Exception>(pRet, err);
+        }// FindVariableByDatasetAndSigle
+        protected DbVariable maintainsVariable(statdatastoreEntities ctx, DbVariable pVar)
+        {
+            if (pVar == null)
+            {
+                return null;
+            }
+            String sigle = pVar.Sigle;
+            if (String.IsNullOrEmpty(sigle))
+            {
+                return null;
+            }
+            else
+            {
+                sigle = sigle.Trim();
+                if (sigle.Length > 31)
+                {
+                    sigle = sigle.Substring(0, 31).Trim();
+                }
+            }
+            String stype = pVar.VarType;
+            if (String.IsNullOrEmpty(stype))
+            {
+                stype = "float";
+            }
+            else
+            {
+                stype = stype.Trim().ToLower();
+                if (stype.Length > 15)
+                {
+                    stype = stype.Substring(0, 15).Trim();
+                }
+            }
+            String name = pVar.Name;
+            if (!String.IsNullOrEmpty(name))
+            {
+                if (name.Length > 63)
+                {
+                    name = name.Substring(0, 63).Trim();
+                }
+            }
+            String desc = pVar.Description;
+            if (!String.IsNullOrEmpty(desc))
+            {
+                if (desc.Length > 255)
+                {
+                    desc = desc.Substring(0, 255).Trim();
+                }
+            }
+            String genre = pVar.Genre;
+            if (!String.IsNullOrEmpty(genre))
+            {
+                if (genre.Length > 15)
+                {
+                    genre = genre.Substring(0, 15).Trim();
+                }
+            }
+            int nId = pVar.Id;
+            if (nId != 0)
+            {
+                DbVariable pOld = this.FindVariableById(ctx, nId);
+                if (pOld == null)
+                {
+                    nId = 0;
+                }
+                else
+                {
+                    DbVariable pCheck = this.FindVariableByDatasetAndSigle(ctx,pOld.DatasetId, sigle);
+                    if ((pCheck != null) && (pCheck.Id != pOld.Id))
+                    {
+                        return null;
+                    }
+                    pOld.Version = pOld.Version + 1;
+                    pOld.Sigle = sigle;
+                    pOld.VarType = stype;
+                    pOld.Genre = genre;
+                    pOld.Name = name;
+                    pOld.Description = desc;
+                    pOld.IsCateg = pVar.IsCateg;
+                    return pOld;
+                }
+            }// nId
+            int nDatasetId = pVar.DatasetId;
+            if (nDatasetId == 0)
+            {
+                return null;
+            }
+            DbDataset pSet = this.FindDatasetById(ctx, nDatasetId);
+            if (pSet == null)
+            {
+                return null;
+            }
+            DbVariable pp = this.FindVariableByDatasetAndSigle(ctx,nDatasetId, sigle);
+            if (pp != null)
+            {
+                pp.Version = pp.Version + 1;
+                pp.VarType = stype;
+                pp.Genre = genre;
+                pp.Name = name;
+                pp.Description = desc;
+                pp.IsCateg = pVar.IsCateg;
+                return pp;
+            }
+            DbVariable pRet = new DbVariable();
+            pRet.Dataset = pSet;
+            pRet.Version = 1;
+            pRet.Sigle = sigle;
+            pRet.VarType = stype;
+            pRet.IsCateg = pVar.IsCateg;
+            pRet.Name = name;
+            pRet.Description = desc;
+            ctx.DbVariables.Add(pRet);
+            return pRet;
+        }// FindVariableById
+        public Tuple<DbVariable, Exception> MaintainsVariable(DbVariable pVar)
+        {
+            DbVariable pRet = null;
+            if (pVar == null)
+            {
+                return new Tuple<DbVariable, Exception>(pRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.maintainsVariable(ctx, pVar);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbVariable, Exception>(pRet, err);
+        }// MaintainsVariable
+        public Tuple<bool, Exception> MaintainsVariables(IEnumerable<DbVariable> oVars)
+        {
+            bool bRet = false;
+            if (oVars == null)
+            {
+                return new Tuple<bool, Exception>(bRet, new ArgumentException());
+            }
+            Exception err = null;
+            try
+            {
+                bRet = true;
+                statdatastoreEntities ctx = getContext();
+                foreach (var p in oVars)
+                {
+                    if (this.maintainsVariable(ctx, p) == null)
+                    {
+                        bRet = false;
+                        break;
+                    }
+                }// p
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<bool, Exception>(bRet, err);
+        }// MaintainsVariable
+        protected void removeValue(statdatastoreEntities ctx, DbValue p)
+        {
+            int nId = p.Id;
+            if (nId != 0)
+            {
+                DbValue v = ctx.DbValues.Find(nId);
+                if (v != null)
+                {
+                    ctx.DbValues.Remove(v);
+                }
+            }
+        }// removeValue
+        protected void removeVariable(statdatastoreEntities ctx, DbVariable p)
+        {
+            int nId = p.Id;
+            if (nId != 0)
+            {
+                DbVariable v = ctx.DbVariables.Find(p);
+                if (v != null)
+                {
+                    var vv = v.Values;
+                    foreach (var x in vv)
+                    {
+                        ctx.DbValues.Remove(x);
+                    }
+                    v.Values.Clear();
+                    ctx.DbVariables.Remove(v);
+                }
+            }
+        }// removeVariable
+        protected void removeIndiv(statdatastoreEntities ctx, DbIndiv p)
+        {
+            int nId = p.Id;
+            if (nId != 0)
+            {
+                DbIndiv v = ctx.DbIndivs.Find(nId);
+                if (v != null)
+                {
+                    var vv = v.Values;
+                    foreach (var x in vv)
+                    {
+                        ctx.DbValues.Remove(x);
+                    }
+                    v.Values.Clear();
+                    ctx.DbIndivs.Remove(v);
+                }
+            }
+        }// removeIndiv
+        protected void removeDataset(statdatastoreEntities ctx, DbDataset p)
+        {
+            int nId = p.Id;
+            if (nId != 0)
+            {
+                DbDataset v = ctx.DbDatasets.Find(nId);
+                if (v != null)
+                {
+                    var vars = v.Variables;
+                    foreach (var px in vars)
+                    {
+                        this.removeVariable(ctx, px);
+                    }
+                    v.Variables.Clear();
+                    var inds = v.Indivs;
+                    foreach (var pp in inds)
+                    {
+                        this.removeIndiv(ctx, pp);
+                    }
+                    v.Indivs.Clear();
+                    ctx.DbDatasets.Remove(v);
+                }// v
+            }
+        }// removeDataset
+    }// class StatDataStore
+}
