@@ -1,0 +1,350 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="statdatastoreModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="DbDataset">
+          <Key>
+            <PropertyRef Name="datasetid" />
+          </Key>
+          <Property Name="datasetid" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="optlock" Type="int" Nullable="false" />
+          <Property Name="csigle" Type="nvarchar" MaxLength="31" Nullable="false" />
+          <Property Name="cnom" Type="nvarchar" MaxLength="63" />
+          <Property Name="cdesc" Type="nvarchar" MaxLength="255" />
+        </EntityType>
+        <EntityType Name="DbIndiv">
+          <Key>
+            <PropertyRef Name="individ" />
+          </Key>
+          <Property Name="individ" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="optlock" Type="int" Nullable="false" />
+          <Property Name="datasetid" Type="int" Nullable="false" />
+          <Property Name="csigle" Type="nvarchar" MaxLength="31" Nullable="false" />
+          <Property Name="cstatus" Type="nvarchar" MaxLength="15" />
+          <Property Name="cnom" Type="nvarchar" MaxLength="63" />
+          <Property Name="cdesc" Type="nvarchar" MaxLength="255" />
+          <Property Name="bdatabytes" Type="image" />
+        </EntityType>
+        <EntityType Name="DbValue">
+          <Key>
+            <PropertyRef Name="valueid" />
+          </Key>
+          <Property Name="valueid" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="optlock" Type="int" Nullable="false" />
+          <Property Name="variableid" Type="int" Nullable="false" />
+          <Property Name="individ" Type="int" Nullable="false" />
+          <Property Name="cval" Type="nvarchar" MaxLength="31" />
+          <Property Name="cstatus" Type="nvarchar" MaxLength="16" />
+        </EntityType>
+        <EntityType Name="DbVariable">
+          <Key>
+            <PropertyRef Name="variableid" />
+          </Key>
+          <Property Name="variableid" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="optlock" Type="int" Nullable="false" />
+          <Property Name="datasetid" Type="int" Nullable="false" />
+          <Property Name="csigle" Type="nvarchar" MaxLength="31" Nullable="false" />
+          <Property Name="ctype" Type="nvarchar" MaxLength="15" Nullable="false" />
+          <Property Name="bcateg" Type="bit" Nullable="false" />
+          <Property Name="cnom" Type="nvarchar" MaxLength="63" />
+          <Property Name="cdesc" Type="nvarchar" MaxLength="255" />
+          <Property Name="cgenre" Type="nvarchar" MaxLength="15" />
+        </EntityType>
+        <Association Name="FK_DbIndiv_ToTable">
+          <End Role="DbDataset" Type="Self.DbDataset" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbIndiv" Type="Self.DbIndiv" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbDataset">
+              <PropertyRef Name="datasetid" />
+            </Principal>
+            <Dependent Role="DbIndiv">
+              <PropertyRef Name="datasetid" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbValue_Indiv">
+          <End Role="DbIndiv" Type="Self.DbIndiv" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbValue" Type="Self.DbValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbIndiv">
+              <PropertyRef Name="individ" />
+            </Principal>
+            <Dependent Role="DbValue">
+              <PropertyRef Name="individ" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbValue_Variable">
+          <End Role="DbVariable" Type="Self.DbVariable" Multiplicity="1" />
+          <End Role="DbValue" Type="Self.DbValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbVariable">
+              <PropertyRef Name="variableid" />
+            </Principal>
+            <Dependent Role="DbValue">
+              <PropertyRef Name="variableid" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbVariable_Dataset">
+          <End Role="DbDataset" Type="Self.DbDataset" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbVariable" Type="Self.DbVariable" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbDataset">
+              <PropertyRef Name="datasetid" />
+            </Principal>
+            <Dependent Role="DbVariable">
+              <PropertyRef Name="datasetid" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="statdatastoreModelStoreContainer">
+          <EntitySet Name="DbDataset" EntityType="Self.DbDataset" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DbIndiv" EntityType="Self.DbIndiv" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DbValue" EntityType="Self.DbValue" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DbVariable" EntityType="Self.DbVariable" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK_DbIndiv_ToTable" Association="Self.FK_DbIndiv_ToTable">
+            <End Role="DbDataset" EntitySet="DbDataset" />
+            <End Role="DbIndiv" EntitySet="DbIndiv" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbValue_Indiv" Association="Self.FK_DbValue_Indiv">
+            <End Role="DbIndiv" EntitySet="DbIndiv" />
+            <End Role="DbValue" EntitySet="DbValue" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbValue_Variable" Association="Self.FK_DbValue_Variable">
+            <End Role="DbVariable" EntitySet="DbVariable" />
+            <End Role="DbValue" EntitySet="DbValue" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbVariable_Dataset" Association="Self.FK_DbVariable_Dataset">
+            <End Role="DbDataset" EntitySet="DbDataset" />
+            <End Role="DbVariable" EntitySet="DbVariable" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="statdatastoreModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="DbDataset">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Version" Type="Int32" Nullable="false" />
+          <Property Name="Sigle" Type="String" MaxLength="31" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Name" Type="String" MaxLength="63" FixedLength="false" Unicode="true" />
+          <Property Name="Description" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Indivs" Relationship="Self.FK_DbIndiv_ToTable" FromRole="DbDataset" ToRole="DbIndiv" />
+          <NavigationProperty Name="Variables" Relationship="Self.FK_DbVariable_Dataset" FromRole="DbDataset" ToRole="DbVariable" />
+        </EntityType>
+        <EntityType Name="DbIndiv">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Version" Type="Int32" Nullable="false" />
+          <Property Name="DatasetId" Type="Int32" Nullable="false" />
+          <Property Name="Sigle" Type="String" MaxLength="31" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Status" Type="String" MaxLength="15" FixedLength="false" Unicode="true" />
+          <Property Name="Name" Type="String" MaxLength="63" FixedLength="false" Unicode="true" />
+          <Property Name="Description" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="DataBytes" Type="Binary" MaxLength="Max" FixedLength="false" />
+          <NavigationProperty Name="Dataset" Relationship="Self.FK_DbIndiv_ToTable" FromRole="DbIndiv" ToRole="DbDataset" />
+          <NavigationProperty Name="Values" Relationship="Self.FK_DbValue_Indiv" FromRole="DbIndiv" ToRole="DbValue" />
+        </EntityType>
+        <EntityType Name="DbValue">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Version" Type="Int32" Nullable="false" />
+          <Property Name="VariableId" Type="Int32" Nullable="false" />
+          <Property Name="IndivId" Type="Int32" Nullable="false" />
+          <Property Name="Value" Type="String" MaxLength="31" FixedLength="false" Unicode="true" />
+          <Property Name="Status" Type="String" MaxLength="16" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Indiv" Relationship="Self.FK_DbValue_Indiv" FromRole="DbValue" ToRole="DbIndiv" />
+          <NavigationProperty Name="Variable" Relationship="Self.FK_DbValue_Variable" FromRole="DbValue" ToRole="DbVariable" />
+        </EntityType>
+        <EntityType Name="DbVariable">
+          <Key>
+            <PropertyRef Name="Id" />
+          </Key>
+          <Property Name="Id" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Version" Type="Int32" Nullable="false" />
+          <Property Name="DatasetId" Type="Int32" Nullable="false" />
+          <Property Name="Sigle" Type="String" MaxLength="31" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="VarType" Type="String" MaxLength="15" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="IsCateg" Type="Boolean" Nullable="false" />
+          <Property Name="Name" Type="String" MaxLength="63" FixedLength="false" Unicode="true" />
+          <Property Name="Description" Type="String" MaxLength="255" FixedLength="false" Unicode="true" />
+          <Property Name="Genre" Type="String" MaxLength="15" FixedLength="false" Unicode="true" />
+          <NavigationProperty Name="Dataset" Relationship="Self.FK_DbVariable_Dataset" FromRole="DbVariable" ToRole="DbDataset" />
+          <NavigationProperty Name="Values" Relationship="Self.FK_DbValue_Variable" FromRole="DbVariable" ToRole="DbValue" />
+        </EntityType>
+        <Association Name="FK_DbIndiv_ToTable">
+          <End Role="DbDataset" Type="Self.DbDataset" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbIndiv" Type="Self.DbIndiv" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbDataset">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="DbIndiv">
+              <PropertyRef Name="DatasetId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbVariable_Dataset">
+          <End Role="DbDataset" Type="Self.DbDataset" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbVariable" Type="Self.DbVariable" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbDataset">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="DbVariable">
+              <PropertyRef Name="DatasetId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbValue_Indiv">
+          <End Role="DbIndiv" Type="Self.DbIndiv" Multiplicity="1">
+            <OnDelete Action="Cascade" />
+          </End>
+          <End Role="DbValue" Type="Self.DbValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbIndiv">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="DbValue">
+              <PropertyRef Name="IndivId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK_DbValue_Variable">
+          <End Role="DbVariable" Type="Self.DbVariable" Multiplicity="1" />
+          <End Role="DbValue" Type="Self.DbValue" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="DbVariable">
+              <PropertyRef Name="Id" />
+            </Principal>
+            <Dependent Role="DbValue">
+              <PropertyRef Name="VariableId" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="statdatastoreEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="DbDatasets" EntityType="Self.DbDataset" />
+          <EntitySet Name="DbIndivs" EntityType="Self.DbIndiv" />
+          <EntitySet Name="DbValues" EntityType="Self.DbValue" />
+          <EntitySet Name="DbVariables" EntityType="Self.DbVariable" />
+          <AssociationSet Name="FK_DbIndiv_ToTable" Association="Self.FK_DbIndiv_ToTable">
+            <End Role="DbDataset" EntitySet="DbDatasets" />
+            <End Role="DbIndiv" EntitySet="DbIndivs" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbVariable_Dataset" Association="Self.FK_DbVariable_Dataset">
+            <End Role="DbDataset" EntitySet="DbDatasets" />
+            <End Role="DbVariable" EntitySet="DbVariables" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbValue_Indiv" Association="Self.FK_DbValue_Indiv">
+            <End Role="DbIndiv" EntitySet="DbIndivs" />
+            <End Role="DbValue" EntitySet="DbValues" />
+          </AssociationSet>
+          <AssociationSet Name="FK_DbValue_Variable" Association="Self.FK_DbValue_Variable">
+            <End Role="DbVariable" EntitySet="DbVariables" />
+            <End Role="DbValue" EntitySet="DbValues" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="statdatastoreModelStoreContainer" CdmEntityContainer="statdatastoreEntities">
+          <EntitySetMapping Name="DbDatasets">
+            <EntityTypeMapping TypeName="statdatastoreModel.DbDataset">
+              <MappingFragment StoreEntitySet="DbDataset">
+                <ScalarProperty Name="Id" ColumnName="datasetid" />
+                <ScalarProperty Name="Version" ColumnName="optlock" />
+                <ScalarProperty Name="Sigle" ColumnName="csigle" />
+                <ScalarProperty Name="Name" ColumnName="cnom" />
+                <ScalarProperty Name="Description" ColumnName="cdesc" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DbIndivs">
+            <EntityTypeMapping TypeName="statdatastoreModel.DbIndiv">
+              <MappingFragment StoreEntitySet="DbIndiv">
+                <ScalarProperty Name="Id" ColumnName="individ" />
+                <ScalarProperty Name="Version" ColumnName="optlock" />
+                <ScalarProperty Name="DatasetId" ColumnName="datasetid" />
+                <ScalarProperty Name="Sigle" ColumnName="csigle" />
+                <ScalarProperty Name="Status" ColumnName="cstatus" />
+                <ScalarProperty Name="Name" ColumnName="cnom" />
+                <ScalarProperty Name="Description" ColumnName="cdesc" />
+                <ScalarProperty Name="DataBytes" ColumnName="bdatabytes" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DbValues">
+            <EntityTypeMapping TypeName="statdatastoreModel.DbValue">
+              <MappingFragment StoreEntitySet="DbValue">
+                <ScalarProperty Name="Id" ColumnName="valueid" />
+                <ScalarProperty Name="Version" ColumnName="optlock" />
+                <ScalarProperty Name="VariableId" ColumnName="variableid" />
+                <ScalarProperty Name="IndivId" ColumnName="individ" />
+                <ScalarProperty Name="Value" ColumnName="cval" />
+                <ScalarProperty Name="Status" ColumnName="cstatus" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DbVariables">
+            <EntityTypeMapping TypeName="statdatastoreModel.DbVariable">
+              <MappingFragment StoreEntitySet="DbVariable">
+                <ScalarProperty Name="Id" ColumnName="variableid" />
+                <ScalarProperty Name="Version" ColumnName="optlock" />
+                <ScalarProperty Name="DatasetId" ColumnName="datasetid" />
+                <ScalarProperty Name="Sigle" ColumnName="csigle" />
+                <ScalarProperty Name="VarType" ColumnName="ctype" />
+                <ScalarProperty Name="IsCateg" ColumnName="bcateg" />
+                <ScalarProperty Name="Name" ColumnName="cnom" />
+                <ScalarProperty Name="Description" ColumnName="cdesc" />
+                <ScalarProperty Name="Genre" ColumnName="cgenre" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="Aucun" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>
