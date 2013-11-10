@@ -8,6 +8,19 @@ namespace UnitTestDbStatStore
     public class StatDataStoreTest
     {
         private static String TEST_DATABASE_SIGLE = "TestSet";
+        private TestContext testContextInstance;
+        public TestContext TestContext
+        {
+            get
+            {
+                return testContextInstance;
+            }
+            set
+            {
+                testContextInstance = value;
+            }
+        }
+
         private StatDataStore m_store;
         private DbDataset m_set;
         //
@@ -42,7 +55,6 @@ namespace UnitTestDbStatStore
             m_set = null;
             m_store = null;
         }
-
         //
         [TestMethod]
         public void TestGetStoreDatasets()
@@ -84,6 +96,12 @@ namespace UnitTestDbStatStore
             Assert.IsNotNull(r);
             Assert.IsNotNull(r.Item1);
             Assert.IsNull(r.Item2);
+            //
+            r = oMan.FindDataset(null);
+            Assert.IsNotNull(r);
+            Assert.IsNull(r.Item1);
+            Assert.IsNotNull(r.Item2);
+            //
             DbDataset px = new DbDataset();
             r = oMan.FindDataset(px);
             Assert.IsNotNull(r);
@@ -104,10 +122,52 @@ namespace UnitTestDbStatStore
             Assert.IsNotNull(pz);
             Assert.IsNull(r.Item2);
             //
+            r = oMan.MaintainsDataset(null);
+            Assert.IsNotNull(r);
+            Assert.IsNull(r.Item1);
+            Assert.IsNotNull(r.Item2);
+            DbDataset pw = new DbDataset();
+            r = oMan.MaintainsDataset(pw);
+            Assert.IsNotNull(r);
+            Assert.IsNull(r.Item1);
+            Assert.IsNotNull(r.Item2);
+            //
+            DbDataset pt = m_set;
+            pt.Sigle = new String('S', 75);
+            pt.Name = new String('N', 98);
+            pt.Description = new String('D', 300);
+            r = oMan.MaintainsDataset(pt);
+            Assert.IsNotNull(r);
+            Assert.IsNotNull(r.Item1);
+          //  Assert.IsNull(r.Item2);
+            //
+            pt.Id = 0;
+            pt.Sigle = null;
+            var rx = oMan.RemoveDataset(pt);
+            Assert.IsNotNull(rx);
+            Assert.IsFalse(rx.Item1);
+            Assert.IsNotNull(rx.Item2);
+            //
+            var rr = oMan.RemoveDataset(m_set);
+            Assert.IsNotNull(rr);
+            //Assert.IsTrue(rr.Item1);
+            //Assert.IsNull(rr.Item2);
+            //
+
+        }// TestDbFindDatasetBySigle
+        public void TestDbRemoveDataset()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_set);
+            DbDataset pSet = new DbDataset();
+            pSet.Sigle = m_set.Sigle;
             var rr = oMan.RemoveDataset(m_set);
             Assert.IsNotNull(rr);
             Assert.IsTrue(rr.Item1);
             Assert.IsNull(rr.Item2);
+            //
+
         }// TestDbFindDatasetBySigle
     }
 }
