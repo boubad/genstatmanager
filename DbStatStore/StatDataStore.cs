@@ -36,9 +36,9 @@ namespace DbStatStore
             }
             return new Tuple<IEnumerable<DbDataset>, Exception>(oRet, err);
         }// getAllDataSets
-        protected DbDataset  FindDatasetById(statdatastoreEntities ctx ,int nId)
+        protected DbDataset FindDatasetById(statdatastoreEntities ctx, int nId)
         {
-                return ctx.DbDatasets.Find(nId);
+            return ctx.DbDatasets.Find(nId);
         }// FindDatasetById
         public Tuple<DbDataset, Exception> FindDatasetById(int nId)
         {
@@ -272,9 +272,9 @@ namespace DbStatStore
             }
             return new Tuple<IEnumerable<DbVariable>, Exception>(oRet, err);
         }//GetDatasetVariables 
-        protected DbVariable  findVariableById(statdatastoreEntities ctx ,int nVarId)
+        protected DbVariable findVariableById(statdatastoreEntities ctx, int nVarId)
         {
-             return ctx.DbVariables.Find(nVarId);
+            return ctx.DbVariables.Find(nVarId);
         }// FindVariableById
         protected DbVariable findVariableByDatasetAndSigle(statdatastoreEntities ctx, int nDatasetId, String sigle)
         {
@@ -413,7 +413,7 @@ namespace DbStatStore
                 }
                 else
                 {
-                    DbVariable pCheck = this.findVariableByDatasetAndSigle(ctx,pOld.DatasetId, sigle);
+                    DbVariable pCheck = this.findVariableByDatasetAndSigle(ctx, pOld.DatasetId, sigle);
                     if ((pCheck != null) && (pCheck.Id != pOld.Id))
                     {
                         return null;
@@ -438,7 +438,7 @@ namespace DbStatStore
             {
                 return null;
             }
-            DbVariable pp = this.findVariableByDatasetAndSigle(ctx,nDatasetId, sigle);
+            DbVariable pp = this.findVariableByDatasetAndSigle(ctx, nDatasetId, sigle);
             if (pp != null)
             {
                 pp.Version = pp.Version + 1;
@@ -575,7 +575,7 @@ namespace DbStatStore
                     while (v.Variables.Count() > 0)
                     {
                         DbVariable vx = v.Variables.First();
-                        this.removeVariable(ctx,vx);
+                        this.removeVariable(ctx, vx);
                         v.Variables.Remove(vx);
                     }
                     while (v.Indivs.Count() > 0)
@@ -655,11 +655,12 @@ namespace DbStatStore
             int nRet = q.Count();
             return nRet;
         }
-        protected Tuple<IEnumerable<DbIndiv>,Exception> getDatasetIndivs(statdatastoreEntities ctx, int nDatasetId, int skip, int taken)
+        protected Tuple<IEnumerable<DbIndiv>, Exception> getDatasetIndivs(statdatastoreEntities ctx, int nDatasetId, int skip, int taken)
         {
             List<DbIndiv> oRet = null;
             Exception err = null;
-            try {
+            try
+            {
                 var q = (from x in ctx.DbIndivs where (x.DatasetId == nDatasetId) orderby x.Sigle ascending select x).Skip(skip).Take(taken);
                 oRet = new List<DbIndiv>();
                 foreach (var p in q)
@@ -692,7 +693,7 @@ namespace DbStatStore
                 }
                 if (xSet == null)
                 {
-                    xSet = this.FindDatasetBySigle(ctx,pSet.Sigle);
+                    xSet = this.FindDatasetBySigle(ctx, pSet.Sigle);
                 }
                 if (xSet != null)
                 {
@@ -755,7 +756,7 @@ namespace DbStatStore
             }
             return pRet;
         }// findIndivByDatasetAndSigle
-        protected DbIndiv findIndiv(statdatastoreEntities ctx,DbIndiv p)
+        protected DbIndiv findIndiv(statdatastoreEntities ctx, DbIndiv p)
         {
             DbIndiv pRet = null;
             if (p != null)
@@ -1021,5 +1022,354 @@ namespace DbStatStore
             }
             return new Tuple<bool, Exception>(bRet, err);
         }// RemoveIndivs
+        protected DbValue findValue(statdatastoreEntities ctx, DbValue pVal)
+        {
+            DbValue pRet = null;
+            if (pVal != null)
+            {
+                int nId = pVal.Id;
+                if (nId != 0)
+                {
+                    if ((pRet = ctx.DbValues.Find(nId)) != null)
+                    {
+                        return pRet;
+                    }
+                }
+                int nVariableId = pVal.VariableId;
+                int nIndivId = pVal.IndivId;
+                if ((nVariableId != 0) && (nIndivId != 0))
+                {
+                    var q = from x in ctx.DbValues where (x.VariableId == nVariableId) && (x.IndivId == nIndivId) select x;
+                    if (q.Count() > 0)
+                    {
+                        pRet = q.First();
+                    }
+                }
+            }// pVal
+            return pRet;
+        }// findValue
+        protected DbValue maintainsValue(statdatastoreEntities ctx, DbValue pVal)
+        {
+            if (pVal == null)
+            {
+                return null;
+            }
+            DbValue pRet = null;
+            String sval = pVal.Value;
+            if (!String.IsNullOrEmpty(sval))
+            {
+                sval = sval.Trim();
+                if (sval.Length > 31)
+                {
+                    sval = sval.Substring(0, 31).Trim();
+                }
+            } else
+            {
+                sval = String.Empty;
+            }
+            String status = pVal.Status;
+            if (!String.IsNullOrEmpty(status))
+            {
+                if (status.Length > 15)
+                {
+                    status = status.Substring(0, 15).Trim();
+                }
+            }
+            else
+            {
+                status = String.Empty;
+            }
+            int nId = pVal.Id;
+            if (nId != 0)
+            {
+                if ((pRet = ctx.DbValues.Find(nId)) != null)
+                {
+                    return pRet;
+                }
+            }
+            if (pRet != null)
+            {
+                String oldStatus = pRet.Status;
+                if (!String.IsNullOrEmpty(oldStatus))
+                {
+                    oldStatus = oldStatus.Trim();
+                }
+                else
+                {
+                    oldStatus = String.Empty;
+                }
+                String sOld = pRet.Value;
+                if (!String.IsNullOrEmpty(sOld))
+                {
+                    sOld = sOld.Trim();
+                }
+                else
+                {
+                    sOld = String.Empty;
+                }
+                if ((sOld.ToLower() != sval.ToLower()) || (status.ToLower() != oldStatus.ToLower()))
+                {
+                    pRet.Version = pRet.Version + 1;
+                    if (String.IsNullOrEmpty(sval))
+                    {
+                        pRet.Value = null;
+                    }
+                    else
+                    {
+                        pRet.Value = sval;
+                    }
+                    pRet.Value = sval;
+                    if (String.IsNullOrEmpty(status))
+                    {
+                        pRet.Status = null;
+                    }
+                    else
+                    {
+                        pRet.Status = status;
+                    }
+                }
+            }
+            else
+            {
+                int nVariableId = pVal.VariableId;
+                int nIndivId = pVal.IndivId;
+                if ((nVariableId == 0) || (nIndivId == 0))
+                {
+                    return null;
+                }
+                var q = from x in ctx.DbValues where (x.VariableId == nVariableId) && (x.IndivId == nIndivId) select x;
+                if (q.Count() > 0)
+                {
+                    pRet = q.First();
+                }
+                if (pRet == null)
+                {
+                    DbVariable pVar = ctx.DbVariables.Find(nVariableId);
+                    DbIndiv pInd = ctx.DbIndivs.Find(nIndivId);
+                    if ((pVar == null) || (pInd == null))
+                    {
+                        return null;
+                    }
+                    pRet = new DbValue();
+                    pRet.Variable = pVar;
+                    pRet.Indiv = pInd;
+                    pRet.Version = 1;
+                    if (!String.IsNullOrEmpty(sval))
+                    {
+                        pRet.Value = sval;
+                    }
+                    if (!String.IsNullOrEmpty(status))
+                    {
+                        pRet.Status = status;
+                    }
+                    ctx.DbValues.Add(pRet);
+                }
+                else
+                {
+                    String oldStatus = pRet.Status;
+                    if (!String.IsNullOrEmpty(oldStatus))
+                    {
+                        oldStatus = oldStatus.Trim();
+                    }
+                    else
+                    {
+                        oldStatus = String.Empty;
+                    }
+                    String sOld = pRet.Value;
+                    if (!String.IsNullOrEmpty(sOld))
+                    {
+                        sOld = sOld.Trim();
+                    }
+                    else
+                    {
+                        sOld = String.Empty;
+                    }
+                    if ((sOld.ToLower() != sval.ToLower()) || (status.ToLower() != oldStatus.ToLower()))
+                    {
+                        pRet.Version = pRet.Version + 1;
+                        if (String.IsNullOrEmpty(sval))
+                        {
+                            pRet.Value = null;
+                        }
+                        else
+                        {
+                            pRet.Value = sval;
+                        }
+                        pRet.Value = sval;
+                        if (String.IsNullOrEmpty(status))
+                        {
+                            pRet.Status = null;
+                        }
+                        else
+                        {
+                            pRet.Status = status;
+                        }
+                    }
+                }
+            }// pRet
+            return pRet;
+        }// findValue
+        public Tuple<bool, Exception> MaintainsValues(IEnumerable<DbValue> oVals)
+        {
+            bool bRet = false;
+            Exception err = null;
+            if (oVals == null)
+            {
+                return new Tuple<bool, Exception>(bRet, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                bRet = true;
+                foreach (var p in oVals)
+                {
+                    if (p != null)
+                    {
+                        if (maintainsValue(ctx, p) == null)
+                        {
+                            bRet = false;
+                            break;
+                        }
+                    }
+                }// p
+                if (bRet)
+                {
+                    bRet = false;
+                    ctx.SaveChanges();
+                    bRet = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<bool, Exception>(bRet, err);
+        }// MaintainsValues 
+        public Tuple<bool, Exception> RemoveValues(IEnumerable<DbValue> oVals)
+        {
+            bool bRet = false;
+            Exception err = null;
+            if (oVals == null)
+            {
+                return new Tuple<bool, Exception>(bRet, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                bRet = true;
+                foreach (var p in oVals)
+                {
+                    if (p != null)
+                    {
+                        this.removeValue(ctx, p);
+                    }
+                }// p
+                ctx.SaveChanges();
+                bRet = true;
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<bool, Exception>(bRet, err);
+        }// MaintainsValues 
+        public Tuple<int, Exception> GetVariableValuesCount(DbVariable pVar)
+        {
+            int nRet = 0;
+            Exception err = null;
+            if (pVar == null)
+            {
+                return new Tuple<int, Exception>(nRet, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                DbVariable xVar = this.findVariable(ctx, pVar);
+                if (xVar != null)
+                {
+                    var q = from x in ctx.DbValues where (x.VariableId == xVar.Id) select x;
+                    nRet = q.Count();
+                }// pVar
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<int, Exception>(nRet, err);
+        }//GetVariableValuesCount 
+        public Tuple<IEnumerable<DbValue>, Exception> GetVariableValues(DbVariable pVar, int skip, int taken)
+        {
+            List<DbValue> oRet = null;
+            Exception err = null;
+            if ((pVar == null) || (skip < 0) || (taken < 1))
+            {
+                return new Tuple<IEnumerable<DbValue>, Exception>(null, new ArgumentException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                DbVariable xVar = this.findVariable(ctx, pVar);
+                oRet = new List<DbValue>();
+                if (xVar != null)
+                {
+                    var q = (from x in ctx.DbValues where (x.VariableId == xVar.Id) orderby x.IndivId ascending select x).Skip(0).Take(taken);
+                    foreach (var p in q){
+                        oRet.Add(p);
+                    }// p
+                }// pVar
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<IEnumerable<DbValue>, Exception>(oRet, err);
+        }//GetVariableValues
+        public Tuple<IEnumerable<DbValue>, Exception> GetIndivValues(DbIndiv pInd)
+        {
+            List<DbValue> oRet = null;
+            Exception err = null;
+            if (pInd == null)
+            {
+                return new Tuple<IEnumerable<DbValue>, Exception>(null, new ArgumentException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                DbIndiv xInd = this.findIndiv(ctx, pInd);
+                oRet = new List<DbValue>();
+                if (xInd != null)
+                {
+                    var q = from x in ctx.DbValues where (x.IndivId == xInd.Id) orderby x.VariableId ascending select x;
+                    foreach (var p in q)
+                    {
+                        oRet.Add(p);
+                    }// p
+                }// pVar
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<IEnumerable<DbValue>, Exception>(oRet, err);
+        }//GetVariableValues
+        public Tuple<DbValue, Exception> FindValue(DbValue pVal)
+        {
+            DbValue pRet = null;
+            Exception err = null;
+            if (pVal == null)
+            {
+                return new Tuple<DbValue, Exception>(null, new ArgumentNullException());
+            }
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.findValue(ctx, pVal);
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbValue, Exception>(pRet, err);
+        }// MaintainsValues 
     }// class StatDataStore
 }

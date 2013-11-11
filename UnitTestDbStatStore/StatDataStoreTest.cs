@@ -30,6 +30,7 @@ namespace UnitTestDbStatStore
         private DbDataset m_set;
         private DbVariable m_var;
         private DbIndiv m_indiv;
+        private DbValue m_val;
         //
         [TestInitialize()]
         public void Initialize()
@@ -94,11 +95,34 @@ namespace UnitTestDbStatStore
                 Assert.IsNotNull(m_indiv);
             }
             Assert.IsTrue(m_indiv.Id != 0);
+            //
+            DbValue pVal = new DbValue();
+            pVal.VariableId = m_var.Id;
+            pVal.IndivId = m_indiv.Id;
+            var vr = m_store.FindValue(pVal);
+            Assert.IsNotNull(vr);
+            Assert.IsNull(vr.Item2);
+            m_val = vr.Item1;
+            if (m_val == null)
+            {
+                List<DbValue> oList = new List<DbValue>() { pVal };
+                var xr = m_store.MaintainsValues(oList);
+                Assert.IsNotNull(xr);
+                Assert.IsNull(xr.Item2);
+                Assert.IsTrue(xr.Item1);
+                vr = m_store.FindValue(pVal);
+                Assert.IsNotNull(vr);
+                Assert.IsNull(vr.Item2);
+                m_val = vr.Item1;
+                Assert.IsNotNull(m_val);
+            }// m_val
+            Assert.IsTrue(m_val.Id != 0);
         } // Initialize
 
         [TestCleanup()]
         public void Cleanup()
         {
+            m_val = null;
             m_indiv = null;
             m_var = null;
             m_set = null;
@@ -440,5 +464,73 @@ namespace UnitTestDbStatStore
              Assert.IsNull(rx.Item2);
              Assert.IsTrue(rx.Item1);
          }// TestDbRemoveIndivs
+        [TestMethod]
+        public void TestDbRemoveValues()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_val);
+            List<DbValue> oList = new List<DbValue>() { m_val };
+            var r = oMan.RemoveValues(oList);
+            Assert.IsNotNull(r);
+            Assert.IsNull(r.Item2);
+            Assert.IsTrue(r.Item1);
+        }// TestDbRemoveValues
+        [TestMethod]
+        public void TestDbMaintainsValues()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_val);
+            m_val.Value = "3.14159";
+            m_val.Status = "OK";
+            List<DbValue> oList = new List<DbValue>() { m_val };
+            var r = oMan.MaintainsValues(oList);
+            Assert.IsNotNull(r);
+            Assert.IsNull(r.Item2);
+            Assert.IsTrue(r.Item1);
+        }// TestDbMaintainsValues
+        [TestMethod]
+        public void TestDbGetVariableValues()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_var);
+            int nCount = 0;
+            var r1 = oMan.GetVariableValuesCount(m_var);
+            Assert.IsNotNull(r1);
+            Assert.IsNull(r1.Item2);
+            nCount = r1.Item1;
+            Assert.IsTrue(nCount > 0);
+            const int taken = 64;
+            int skip = 0;
+            while (skip < nCount)
+            {
+                var r2 = oMan.GetVariableValues(m_var, skip, taken);
+                Assert.IsNotNull(r2);
+                Assert.IsNull(r2.Item2);
+                Assert.IsNotNull(r2.Item1);
+                List<DbValue> oList = new List<DbValue>(r2.Item1);
+                if (oList.Count < taken)
+                {
+                    break;
+                }
+                skip += taken;
+            }// while
+        }//TestDbGetVariableValues
+        [TestMethod]
+        public void TestDbGetIndivValues()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_indiv);
+            var r2 = oMan.GetIndivValues(m_indiv);
+            Assert.IsNotNull(r2);
+            Assert.IsNull(r2.Item2);
+            Assert.IsNotNull(r2.Item1);
+            List<DbValue> oList = new List<DbValue>(r2.Item1);
+            int nCount = oList.Count;
+            Assert.IsTrue(nCount > 0);
+        }//TestDbGetVariableValues
     }
 }
