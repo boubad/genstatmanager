@@ -9,9 +9,12 @@ namespace UnitTestDbStatStore
     {
         private static readonly String TEST_DATABASE_SIGLE = "TestSet";
         private static readonly String TEST_VARIABLE_SIGLE = "TestVar";
+        private static readonly String TEST_VARIABLE_SIGLE1 = "TestVar_1";
         private static readonly String TEST_VARIABLE_TYPE = "float";
+        private static readonly String TEST_VARIABLE_TYPE1 = "bool";
         private static readonly String TEST_VARIABLE_GENRE = "Input";
         private static readonly String TEST_INDIV_SIGLE = "TestIndiv";
+        private static readonly String TEST_INDIV_SIGLE1 = "TestIndiv_1";
         //
         private TestContext testContextInstance;
         public TestContext TestContext
@@ -30,7 +33,9 @@ namespace UnitTestDbStatStore
         private DbDataset m_set;
         private DbVariable m_var;
         private DbIndiv m_indiv;
-        private DbValue m_val;
+        private DbVariable m_var1;
+        private DbIndiv m_indiv1;
+        private List<DbValue> m_vals;
         //
         [TestInitialize()]
         public void Initialize()
@@ -77,6 +82,27 @@ namespace UnitTestDbStatStore
             }
             Assert.IsTrue(m_var.Id != 0);
             //
+            rx = m_store.FindVariableByDatasetAndSigle(m_set.Id, TEST_VARIABLE_SIGLE1);
+            Assert.IsNotNull(rx);
+            Assert.IsNull(rx.Item2);
+            m_var1 = rx.Item1;
+            if (m_var1 == null)
+            {
+                DbVariable pVar = new DbVariable();
+                pVar.DatasetId = m_set.Id;
+                pVar.Sigle = TEST_VARIABLE_SIGLE1;
+                pVar.VarType = TEST_VARIABLE_TYPE1;
+                pVar.Genre = TEST_VARIABLE_GENRE;
+                pVar.Name = TEST_VARIABLE_SIGLE1;
+                pVar.Description = TEST_VARIABLE_SIGLE1;
+                rx = m_store.MaintainsVariable(pVar);
+                Assert.IsNotNull(rx);
+                Assert.IsNull(rx.Item2);
+                m_var1 = rx.Item1;
+                Assert.IsNotNull(m_var1);
+            }
+            Assert.IsTrue(m_var1.Id != 0);
+            //
             DbIndiv pInd = new DbIndiv();
             pInd.DatasetId = m_set.Id;
             pInd.Sigle = TEST_INDIV_SIGLE;
@@ -96,33 +122,89 @@ namespace UnitTestDbStatStore
             }
             Assert.IsTrue(m_indiv.Id != 0);
             //
-            DbValue pVal = new DbValue();
-            pVal.VariableId = m_var.Id;
-            pVal.IndivId = m_indiv.Id;
-            var vr = m_store.FindValue(pVal);
-            Assert.IsNotNull(vr);
-            Assert.IsNull(vr.Item2);
-            m_val = vr.Item1;
-            if (m_val == null)
+            pInd.Id = 0;
+            pInd.DatasetId = m_set.Id;
+            pInd.Sigle = TEST_INDIV_SIGLE1;
+           ry = m_store.FindIndiv(pInd);
+            Assert.IsNotNull(ry);
+            Assert.IsNull(ry.Item2);
+            m_indiv1 = ry.Item1;
+            if (m_indiv1 == null)
             {
-                List<DbValue> oList = new List<DbValue>() { pVal };
-                var xr = m_store.MaintainsValues(oList);
+                pInd.Name = TEST_INDIV_SIGLE1;
+                pInd.Description = TEST_INDIV_SIGLE1;
+                ry = m_store.MaintainsIndiv(pInd);
+                Assert.IsNotNull(ry);
+                Assert.IsNull(ry.Item2);
+                m_indiv1 = ry.Item1;
+                Assert.IsNotNull(m_indiv1);
+            }
+            Assert.IsTrue(m_indiv1.Id != 0);
+            //
+            List<DbValue> oList = new List<DbValue>();
+            DbValue v1 = new DbValue();
+            v1.VariableId = m_var.Id;
+            v1.IndivId = m_indiv.Id;
+            v1.Value = "10";
+            oList.Add(v1);
+            DbValue v2 = new DbValue();
+            v2.VariableId = m_var.Id;
+            v2.IndivId = m_indiv1.Id;
+            v2.Value = "20";
+            oList.Add(v2);
+            DbValue v3 = new DbValue();
+            v3.VariableId = m_var1.Id;
+            v3.IndivId = m_indiv.Id;
+            v3.Value = "30";
+            oList.Add(v3);
+            DbValue v4 = new DbValue();
+            v4.VariableId = m_var1.Id;
+            v4.IndivId = m_indiv1.Id;
+            v4.Value = "40";
+            oList.Add(v4);
+            List<DbValue> xList = new List<DbValue>();
+            foreach (var val in oList)
+            {
+                var vr = m_store.FindValue(val);
+                Assert.IsNotNull(vr);
+                Assert.IsNull(vr.Item2);
+                DbValue vt = vr.Item1;
+                if (vt == null)
+                {
+                    xList.Add(val);
+                }
+            }// val
+            if (xList.Count > 0)
+            {
+                var xr = m_store.MaintainsValues(xList);
                 Assert.IsNotNull(xr);
                 Assert.IsNull(xr.Item2);
                 Assert.IsTrue(xr.Item1);
-                vr = m_store.FindValue(pVal);
+            }
+            m_vals = new List<DbValue>();
+            foreach (var val in oList)
+            {
+                var vr = m_store.FindValue(val);
                 Assert.IsNotNull(vr);
                 Assert.IsNull(vr.Item2);
-                m_val = vr.Item1;
-                Assert.IsNotNull(m_val);
-            }// m_val
-            Assert.IsTrue(m_val.Id != 0);
+                DbValue vt = vr.Item1;
+                Assert.IsNotNull(vt);
+                Assert.IsTrue(vt.Id != 0);
+                xList.Add(val);
+            }// val
+            //
         } // Initialize
 
         [TestCleanup()]
         public void Cleanup()
         {
-            m_val = null;
+            if (m_vals != null)
+            {
+                m_vals.Clear();
+                m_vals = null;
+            }
+            m_indiv1 = null;
+            m_var1 = null;
             m_indiv = null;
             m_var = null;
             m_set = null;
@@ -469,26 +551,33 @@ namespace UnitTestDbStatStore
         {
             StatDataStore oMan = m_store;
             Assert.IsNotNull(oMan);
-            Assert.IsNotNull(m_val);
-            List<DbValue> oList = new List<DbValue>() { m_val };
-            var r = oMan.RemoveValues(oList);
-            Assert.IsNotNull(r);
-            Assert.IsNull(r.Item2);
-            Assert.IsTrue(r.Item1);
+            Assert.IsNotNull(m_vals);
+            if (m_vals.Count > 0)
+            {
+                var r = oMan.RemoveValues(m_vals);
+                Assert.IsNotNull(r);
+                Assert.IsNull(r.Item2);
+                Assert.IsTrue(r.Item1);
+            }
         }// TestDbRemoveValues
         [TestMethod]
         public void TestDbMaintainsValues()
         {
             StatDataStore oMan = m_store;
             Assert.IsNotNull(oMan);
-            Assert.IsNotNull(m_val);
-            m_val.Value = "3.14159";
-            m_val.Status = "OK";
-            List<DbValue> oList = new List<DbValue>() { m_val };
-            var r = oMan.MaintainsValues(oList);
-            Assert.IsNotNull(r);
-            Assert.IsNull(r.Item2);
-            Assert.IsTrue(r.Item1);
+            Assert.IsNotNull(m_vals);
+            if (m_vals.Count > 0)
+            {
+                foreach (var v in m_vals)
+                {
+                    v.Value = "765";
+                    v.Status = "OK";
+                }// v
+                var r = oMan.MaintainsValues(m_vals);
+                Assert.IsNotNull(r);
+                Assert.IsNull(r.Item2);
+                Assert.IsTrue(r.Item1);
+            }
         }// TestDbMaintainsValues
         [TestMethod]
         public void TestDbGetVariableValues()
@@ -532,5 +621,22 @@ namespace UnitTestDbStatStore
             int nCount = oList.Count;
             Assert.IsTrue(nCount > 0);
         }//TestDbGetVariableValues
+        [TestMethod]
+        public void TestDbGetCommonValues()
+        {
+            StatDataStore oMan = m_store;
+            Assert.IsNotNull(oMan);
+            Assert.IsNotNull(m_var);
+            Assert.IsNotNull(m_var1);
+            List<DbVariable> oList = new List<DbVariable>() { m_var,m_var1 };
+            var r2 = oMan.GetCommonValues(oList);
+            Assert.IsNotNull(r2);
+            Assert.IsNull(r2.Item2);
+            Assert.IsNotNull(r2.Item1);
+            Dictionary<int, Dictionary<int, Object>> oDict = r2.Item1;
+            Assert.IsNotNull(oDict);
+            int nCount = oDict.Count;
+            Assert.IsTrue(nCount > 0);
+        }//TestDbGetCommonValues
     }
 }
