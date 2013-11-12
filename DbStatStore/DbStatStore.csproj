@@ -69,6 +69,7 @@
     <Compile Include="DbIndiv.cs">
       <DependentUpon>StatDataModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="DbStatStoreManager.cs" />
     <Compile Include="DbValue.cs">
       <DependentUpon>StatDataModel.tt</DependentUpon>
     </Compile>
@@ -144,6 +145,12 @@
   </ItemGroup>
   <ItemGroup>
     <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\StatDataset\StatDataset.csproj">
+      <Project>{f736dea0-f779-47c7-8414-32587d03395d}</Project>
+      <Name>StatDataset</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

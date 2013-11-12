@@ -38,10 +38,6 @@ namespace DbStatStore
                             return pRet;
                         }
                         stype = q.First().Trim().ToLower();
-                        if (String.IsNullOrEmpty(stype))
-                        {
-                            return pRet;
-                        }
                         oTypes[nVarId] = stype;
                     }
                     if (stype.Contains("int"))
@@ -266,7 +262,7 @@ namespace DbStatStore
             pRet.Description = desc;
             ctx.DbVariables.Add(pRet);
             return pRet;
-        }// FindVariableById
+        }// maintainsVariable
         protected void removeValue(statdatastoreEntities ctx, DbValue p)
         {
             int nId = p.Id;
