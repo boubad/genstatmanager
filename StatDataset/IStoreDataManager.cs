@@ -11,6 +11,7 @@ namespace StatDataset
         Tuple<IEnumerable<StatDataset>, Exception> GetAllDataSets();
         Tuple<StatDataset, Exception> FindDataset(StatDataset pSet);
         Tuple<bool, Exception> RemoveDataset(StatDataset pSet);
+        Tuple<StatDataset, Exception> MaintainsDataset(StatDataset pSet);
         Tuple<IEnumerable<StatVariable>, Exception> GetDatasetVariables(StatDataset pSet);
         Tuple<StatVariable, Exception> FindVariable(StatVariable pVar);
         Tuple<StatVariable, Exception> MaintainsVariable(StatVariable pVar);
