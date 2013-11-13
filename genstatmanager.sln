@@ -13,6 +13,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbStatStore", "DbStatStore\DbStatStore.csproj", "{DD8278C5-78E5-44E5-90FA-27EB409AB728}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTestDbStatStore", "UnitTestDbStatStore\UnitTestDbStatStore.csproj", "{932909DD-FFEE-40B9-9EF2-A4FA494979E2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F736DEA0-F779-47C7-8414-32587D03395D} = {F736DEA0-F779-47C7-8414-32587D03395D}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StatDataset", "StatDataset\StatDataset.csproj", "{F736DEA0-F779-47C7-8414-32587D03395D}"
 EndProject

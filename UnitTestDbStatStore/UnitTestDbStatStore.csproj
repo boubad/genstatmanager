@@ -60,11 +60,16 @@
   <ItemGroup>
     <Compile Include="StatDataStoreTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="PredDbStoreManagerTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\DbStatStore\DbStatStore.csproj">
       <Project>{dd8278c5-78e5-44e5-90fa-27eb409ab728}</Project>
       <Name>DbStatStore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\StatDataset\StatDataset.csproj">
+      <Project>{f736dea0-f779-47c7-8414-32587d03395d}</Project>
+      <Name>StatDataset</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

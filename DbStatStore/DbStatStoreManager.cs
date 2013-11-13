@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using StatDataset;
 namespace DbStatStore
 {
+    
     public class DbStatStoreManager : IStoreDataManager
     {
         public DbStatStoreManager()
@@ -58,6 +59,10 @@ namespace DbStatStore
             pp.Status = p.Status;
             pp.IsModified = false;
         }// convertValue
+        protected virtual IEnumerable<TableDef> getTablesDefs()
+        {
+            return new List<TableDef>();
+        }// getTablesDesf
         public Tuple<IEnumerable<StatDataset.StatDataset>, Exception> GetAllDataSets()
         {
             var pMan = getStore();
@@ -76,7 +81,7 @@ namespace DbStatStore
             return new Tuple<IEnumerable<StatDataset.StatDataset>, Exception>(oRet, rr.Item2);
         }// getAllDataSets
 
-        public Tuple<StatDataset.StatDataset, Exception> FindDataset(StatDataset.StatDataset pSet)
+        public virtual Tuple<StatDataset.StatDataset, Exception> FindDataset(StatDataset.StatDataset pSet)
         {
             if (pSet == null)
             {
@@ -119,7 +124,7 @@ namespace DbStatStore
             Exception err = rr.Item2;
             return new Tuple<bool, Exception>(bRet, err);
         }// RemoveDataset
-        public Tuple<StatDataset.StatDataset, Exception> MaintainsDataset(StatDataset.StatDataset pSet)
+        public virtual Tuple<StatDataset.StatDataset, Exception> MaintainsDataset(StatDataset.StatDataset pSet)
         {
             if (pSet == null)
             {
@@ -137,6 +142,11 @@ namespace DbStatStore
             StatDataset.StatDataset pRet = null;
             if (p != null)
             {
+                IEnumerable<TableDef> oTables = this.getTablesDefs();
+                if (oTables != null)
+                {
+                    pMan.MaintainsDataset(p, oTables);
+                }
                 pRet = new StatDataset.StatDataset();
                 this.convertDataset(p, pRet);
             }

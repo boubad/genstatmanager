@@ -76,6 +76,7 @@
     <Compile Include="DbVariable.cs">
       <DependentUpon>StatDataModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="PredDbStoreManager.cs" />
     <Compile Include="StatDataModel.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

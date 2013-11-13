@@ -6,6 +6,14 @@ using System.Threading.Tasks;
 
 namespace DbStatStore
 {
+    public class TableDef
+    {
+        public TableDef() { }
+        public String Sigle { get; set; }
+        public String Genre { get; set; }
+        public String VarType { get; set; }
+        public bool IsCateg { get; set; }
+    }// class TableDef
     public class StatDataStore
     {
         public StatDataStore()
@@ -124,6 +132,33 @@ namespace DbStatStore
             {
                 pRet = q.First();
             }
+            return pRet;
+        }// FindDatasetBySigle
+        protected DbDataset findDataset(statdatastoreEntities ctx, DbDataset pSet)
+        {
+            if (pSet == null)
+            {
+                return null; ;
+            }
+            DbDataset pRet = null;
+            int nId = pSet.Id;
+            if (nId != 0)
+            {
+                pRet = this.findDatasetById(ctx, nId);
+                if (pRet != null)
+                {
+                    return pRet;
+                }
+            }
+            String s = pSet.Sigle;
+            if (pRet == null)
+            {
+                if (String.IsNullOrEmpty(s))
+                {
+                    return null;
+                }
+            }
+            pRet = this.findDatasetBySigle(ctx, s);
             return pRet;
         }// FindDatasetBySigle
         protected DbVariable findVariableById(statdatastoreEntities ctx, int nVarId)
@@ -707,8 +742,89 @@ namespace DbStatStore
             }// pRet
             return pRet;
         }// findValue
+        protected DbDataset maintainsDataset(statdatastoreEntities ctx, DbDataset pSet)
+        {
+            DbDataset pRet = null;
+            if (pSet == null)
+            {
+                return null;
+            }
+            String sigle = pSet.Sigle;
+            if (String.IsNullOrEmpty(sigle))
+            {
+                return null;
+            }
+            String sSigle = sigle.Trim();
+            if (sSigle.Length > 31)
+            {
+                sSigle = sSigle.Substring(0, 31).Trim();
+            }
+            String name = pSet.Name;
+            if (!String.IsNullOrEmpty(name))
+            {
+                if (name.Length > 63)
+                {
+                    name = name.Substring(0, 63).Trim();
+                }
+            }
+            String desc = pSet.Description;
+            if (!String.IsNullOrEmpty(desc))
+            {
+                if (desc.Length > 255)
+                {
+                    desc = desc.Substring(0, 255).Trim();
+                }
+            }
+            int nId = pSet.Id;
+            if (nId != 0)
+            {
+                pRet = this.findDatasetById(ctx, nId);
+            }
+            if (pRet == null)
+            {
+                pRet = this.findDatasetBySigle(ctx, sSigle);
+            }
+            if (pRet != null)
+            {
+                pRet.Sigle = sSigle;
+                pRet.Version = pRet.Version + 1;
+                pRet.Name = name;
+                pRet.Description = desc;
+            }
+            else
+            {
+                pRet = new DbDataset();
+                pRet.Version = 1;
+                pRet.Sigle = sSigle;
+                pRet.Name = name;
+                pRet.Description = desc;
+                ctx.DbDatasets.Add(pRet);
+            }
+            return pRet;
+        }// MaintainsDataset
+        protected void checkTables(statdatastoreEntities ctx, DbDataset pSet, IEnumerable<TableDef> oTables)
+        {
+            foreach (var p in oTables)
+            {
+                String s = p.Sigle.Trim().ToLower();
+                var q = from x in ctx.DbVariables where (x.DatasetId == pSet.Id) && (x.Sigle.Trim().ToLower() == s) select x;
+                if (q.Count() < 1)
+                {
+                    DbVariable pp = new DbVariable();
+                    pp.Dataset = pSet;
+                    pp.Version = 1;
+                    pp.Sigle = p.Sigle;
+                    pp.VarType = p.VarType;
+                    pp.IsCateg = p.IsCateg;
+                    pp.Genre = p.Genre;
+                    pp.Name = p.Sigle;
+                    pp.Description = p.Sigle;
+                    ctx.DbVariables.Add(pp);
+                }
+            }// p
+        }// checkTables
         #endregion // Protected Methods
-       
+
         public Tuple<IEnumerable<DbDataset>, Exception> GetAllDataSets()
         {
             List<DbDataset> oRet = null;
@@ -806,66 +922,38 @@ namespace DbStatStore
         public Tuple<DbDataset, Exception> MaintainsDataset(DbDataset pSet)
         {
             DbDataset pRet = null;
-            if (pSet == null)
-            {
-                return new Tuple<DbDataset, Exception>(pRet, new ArgumentNullException());
-            }
-            String sigle = pSet.Sigle;
-            if (String.IsNullOrEmpty(sigle))
-            {
-                return new Tuple<DbDataset, Exception>(pRet, new ArgumentException());
-            }
-            String sSigle = sigle.Trim();
-            if (sSigle.Length > 31)
-            {
-                sSigle = sSigle.Substring(0, 31).Trim();
-            }
             Exception err = null;
-            String name = pSet.Name;
-            if (!String.IsNullOrEmpty(name))
-            {
-                if (name.Length > 63)
-                {
-                    name = name.Substring(0, 63).Trim();
-                }
-            }
-            String desc = pSet.Description;
-            if (!String.IsNullOrEmpty(desc))
-            {
-                if (desc.Length > 255)
-                {
-                    desc = desc.Substring(0, 255).Trim();
-                }
-            }
             try
             {
                 statdatastoreEntities ctx = getContext();
-                int nId = pSet.Id;
-                if (nId != 0)
-                {
-                    pRet = this.findDatasetById(ctx, nId);
-                }
-                if (pRet == null)
-                {
-                    pRet = this.findDatasetBySigle(ctx, sSigle);
-                }
+                pRet = this.maintainsDataset(ctx, pSet);
                 if (pRet != null)
                 {
-                    pRet.Sigle = sSigle;
-                    pRet.Version = pRet.Version + 1;
-                    pRet.Name = name;
-                    pRet.Description = desc;
                     ctx.SaveChanges();
                 }
                 else
                 {
-                    pRet = new DbDataset();
-                    pRet.Version = 1;
-                    pRet.Sigle = sSigle;
-                    pRet.Name = name;
-                    pRet.Description = desc;
-                    ctx.DbDatasets.Add(pRet);
-                    ctx.SaveChanges();
+                    err = new ArgumentException();
+                }
+            }
+            catch (Exception ex)
+            {
+                err = ex;
+            }
+            return new Tuple<DbDataset, Exception>(pRet, err);
+        }// MaintainsDataset
+        public Tuple<DbDataset, Exception> MaintainsDataset(DbDataset pSet, IEnumerable<TableDef> oTables)
+        {
+            DbDataset pRet = null;
+            Exception err = null;
+            try
+            {
+                statdatastoreEntities ctx = getContext();
+                pRet = this.findDataset(ctx,pSet);
+                if ((pRet != null) && (oTables != null))
+                {
+                        this.checkTables(ctx, pRet, oTables);
+                        ctx.SaveChanges();
                 }
             }
             catch (Exception ex)
@@ -933,8 +1021,10 @@ namespace DbStatStore
             try
             {
                 statdatastoreEntities ctx = getContext();
-                var q = from x in ctx.DbVariables where (x.DatasetId == nId)
-                        orderby x.IsCateg descending, x.Genre ascending, x.Sigle ascending select x;
+                var q = from x in ctx.DbVariables
+                        where (x.DatasetId == nId)
+                        orderby x.IsCateg descending, x.Genre ascending, x.Sigle ascending
+                        select x;
                 oRet = new List<DbVariable>();
                 foreach (var p in q)
                 {
@@ -1414,7 +1504,8 @@ namespace DbStatStore
                 if (xVar != null)
                 {
                     var q = (from x in ctx.DbValues where (x.VariableId == xVar.Id) orderby x.IndivId ascending select x).Skip(0).Take(taken);
-                    foreach (var p in q){
+                    foreach (var p in q)
+                    {
                         oRet.Add(p);
                     }// p
                 }// pVar
@@ -1487,7 +1578,7 @@ namespace DbStatStore
             }
             return new Tuple<IEnumerable<Tuple<int, object>>, Exception>(oRet, err);
         }// ConvertValues
-        public Tuple<Dictionary<int, Dictionary<int, Object>>,Exception> GetCommonValues(IEnumerable<DbVariable> oVars)
+        public Tuple<Dictionary<int, Dictionary<int, Object>>, Exception> GetCommonValues(IEnumerable<DbVariable> oVars)
         {
             Dictionary<int, Dictionary<int, Object>> oRet = new Dictionary<int, Dictionary<int, object>>();
             if (oVars == null)
@@ -1495,7 +1586,8 @@ namespace DbStatStore
                 return new Tuple<Dictionary<int, Dictionary<int, object>>, Exception>(null, new ArgumentNullException());
             }
             Exception err = null;
-            try {
+            try
+            {
                 statdatastoreEntities ctx = getContext();
                 foreach (var pVar in oVars)
                 {
@@ -1591,7 +1683,7 @@ namespace DbStatStore
             {
                 err = ex;
             }
-            return new Tuple<Dictionary<int, Dictionary<int, object>>,Exception>(oRet, err);
+            return new Tuple<Dictionary<int, Dictionary<int, object>>, Exception>(oRet, err);
         }// GetCommonValues
     }// class StatDataStore
 }
